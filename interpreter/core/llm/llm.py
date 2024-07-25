@@ -4,17 +4,21 @@ os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
 import litellm
 
 litellm.suppress_debug_info = True
+import json
 import subprocess
 import time
 import uuid
 
+import requests
 import tokentrim as tt
 
 from ...terminal_interface.utils.display_markdown_message import (
     display_markdown_message,
 )
-from .run_function_calling_llm import run_function_calling_llm
 from .run_text_llm import run_text_llm
+
+# from .run_function_calling_llm import run_function_calling_llm
+from .run_tool_calling_llm import run_tool_calling_llm
 from .utils.convert_to_openai_messages import convert_to_openai_messages
 
 
@@ -48,6 +52,7 @@ class Llm:
         self.api_base = None
         self.api_key = None
         self.api_version = None
+        self._is_loaded = False
 
         # Budget manager powered by LiteLLM
         self.max_budget = None
@@ -60,6 +65,19 @@ class Llm:
 
         And then processing its output, whether it's a function or non function calling model, into LMC format.
         """
+
+        if not self._is_loaded:
+            self.load()
+
+        if (
+            self.max_tokens is not None
+            and self.context_window is not None
+            and self.max_tokens > self.context_window
+        ):
+            print(
+                "Warning: max_tokens is larger than context_window. Setting max_tokens to be 0.2 times the context_window."
+            )
+            self.max_tokens = int(0.2 * self.context_window)
 
         # Assertions
         assert (
@@ -143,7 +161,7 @@ class Llm:
                         img_msg["content"] = (
                             precursor
                             + image_description
-                            + "\n---\nThe image contains the following text exactly, which may or may not be relevant (if it's not relevant, ignore this): '''\n"
+                            + "\n---\nI've OCR'd the image, this is the result (this may or may not be relevant. If it's not relevant, ignore this): '''\n"
                             + ocr
                             + "\n'''"
                             + postcursor
@@ -197,7 +215,7 @@ class Llm:
                         if self.interpreter.in_terminal_interface:
                             display_markdown_message(
                                 """
-**We were unable to determine the context window of this model.** Defaulting to 3000.
+**We were unable to determine the context window of this model.** Defaulting to 8000.
 
 If your model can handle more, run `interpreter --context_window {token limit} --max_tokens {max tokens per response}`.
 
@@ -207,7 +225,7 @@ Continuing...
                         else:
                             display_markdown_message(
                                 """
-**We were unable to determine the context window of this model.** Defaulting to 3000.
+**We were unable to determine the context window of this model.** Defaulting to 8000.
 
 If your model can handle more, run `self.context_window = {token limit}`.
 
@@ -217,7 +235,7 @@ Continuing...
                             """
                             )
                     messages = tt.trim(
-                        messages, system_message=system_message, max_tokens=3000
+                        messages, system_message=system_message, max_tokens=8000
                     )
         except:
             # If we're trimming messages, this won't work.
@@ -269,14 +287,28 @@ Continuing...
             time.sleep(5)
 
         if self.supports_functions:
-            yield from run_function_calling_llm(self, params)
+            # yield from run_function_calling_llm(self, params)
+            yield from run_tool_calling_llm(self, params)
         else:
             yield from run_text_llm(self, params)
 
-    def load(self):
-        if self.model.startswith("ollama/"):
-            # WOAH we should also hit up ollama and set max_tokens and context_window based on the LLM. I think they let u do that
+    # If you change model, set _is_loaded to false
+    @property
+    def model(self):
+        return self._model
 
+    @model.setter
+    def model(self, value):
+        self._model = value
+        self._is_loaded = False
+
+    def load(self):
+        if self._is_loaded:
+            return
+
+        self._is_loaded = True
+
+        if self.model.startswith("ollama/"):
             model_name = self.model.replace("ollama/", "")
             try:
                 # List out all downloaded ollama models. Will fail if ollama isn't installed
@@ -301,17 +333,45 @@ Continuing...
                 self.interpreter.display_message(f"\nDownloading {model_name}...\n")
                 subprocess.run(["ollama", "pull", model_name], check=True)
 
+            # Get context window if not set
+            if self.context_window == None:
+                response = requests.post(
+                    "http://localhost:11434/api/show", json={"name": model_name}
+                )
+                model_info = response.json().get("model_info", {})
+                context_length = None
+                for key in model_info:
+                    if "context_length" in key:
+                        context_length = model_info[key]
+                        break
+                if context_length is not None:
+                    self.context_window = context_length
+            if self.max_tokens == None:
+                if self.context_window != None:
+                    self.max_tokens = int(self.context_window * 0.2)
+
             # Send a ping, which will actually load the model
-            print(f"\nLoading {model_name}...\n")
+            print(f"Loading {model_name}...\n")
 
             old_max_tokens = self.max_tokens
             self.max_tokens = 1
             self.interpreter.computer.ai.chat("ping")
             self.max_tokens = old_max_tokens
 
-            # self.interpreter.display_message("\n*Model loaded.*\n")
+            self.interpreter.display_message("*Model loaded.*\n")
 
         # Validate LLM should be moved here!!
+
+        if self.context_window == None:
+            try:
+                model_info = litellm.get_model_info(model=self.model)
+                self.context_window = model_info["max_input_tokens"]
+                if self.max_tokens == None:
+                    self.max_tokens = min(
+                        int(self.context_window * 0.2), model_info["max_output_tokens"]
+                    )
+            except:
+                pass
 
 
 def fixed_litellm_completions(**params):
@@ -332,25 +392,29 @@ def fixed_litellm_completions(**params):
         litellm.drop_params = True
 
     # Run completion
+    attempts = 4
     first_error = None
-    try:
-        yield from litellm.completion(**params)
-    except Exception as e:
-        # Store the first error
-        first_error = e
-        # LiteLLM can fail if there's no API key,
-        # even though some models (like local ones) don't require it.
 
-        if "api key" in str(first_error).lower() and "api_key" not in params:
-            print(
-                "LiteLLM requires an API key. Please set a dummy API key to prevent this message. (e.g `interpreter --api_key x` or `self.api_key = 'x'`)"
-            )
-
-        # So, let's try one more time with a dummy API key:
-        params["api_key"] = "x"
-
+    for attempt in range(attempts):
         try:
             yield from litellm.completion(**params)
-        except:
-            # If the second attempt also fails, raise the first error
-            raise first_error
+            return  # If the completion is successful, exit the function
+        except Exception as e:
+            if attempt == 0:
+                # Store the first error
+                first_error = e
+            if (
+                isinstance(e, litellm.exceptions.AuthenticationError)
+                and "api_key" not in params
+            ):
+                print(
+                    "LiteLLM requires an API key. Trying again with a dummy API key. In the future, please set a dummy API key to prevent this message. (e.g `interpreter --api_key x` or `self.api_key = 'x'`)"
+                )
+                # So, let's try one more time with a dummy API key:
+                params["api_key"] = "x"
+            if attempt == 1:
+                # Try turning up the temperature?
+                params["temperature"] = params.get("temperature", 0.0) + 0.1
+
+    if first_error is not None:
+        raise first_error  # If all attempts fail, raise the first error

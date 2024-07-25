@@ -9,7 +9,6 @@ from interpreter.terminal_interface.contributing_conversations import (
     contribute_conversations,
 )
 
-from ..core.core import OpenInterpreter
 from .conversation_navigator import conversation_navigator
 from .profiles.profiles import open_storage_dir, profile, reset_profile
 from .utils.check_for_update import check_for_update
@@ -265,7 +264,24 @@ def start_terminal_interface(interpreter):
                 "attr_name": "contribute_conversation",
             },
         },
+        {
+            "name": "plain",
+            "nickname": "pl",
+            "help_text": "set output to plain text",
+            "type": bool,
+            "attribute": {
+                "object": interpreter,
+                "attr_name": "plain_text_display",
+            },
+        },
     ]
+
+    if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
+        message = " ".join(sys.argv[1:])
+        interpreter.messages.append(
+            {"role": "user", "type": "message", "content": "I " + message}
+        )
+        sys.argv = sys.argv[:1]
 
     # Check for deprecated flags before parsing arguments
     deprecated_flags = {
@@ -279,7 +295,17 @@ def start_terminal_interface(interpreter):
             sys.argv.remove(old_flag)
             sys.argv.append(new_flag)
 
-    parser = argparse.ArgumentParser(
+    class CustomHelpParser(argparse.ArgumentParser):
+        def print_help(self, *args, **kwargs):
+            super().print_help(*args, **kwargs)
+            special_help_message = '''
+Open Interpreter, 2024
+
+Use """ to write multi-line messages.
+            '''
+            print(special_help_message)
+
+    parser = CustomHelpParser(
         description="Open Interpreter", usage="%(prog)s [options]"
     )
 
@@ -319,6 +345,12 @@ def start_terminal_interface(interpreter):
             )
 
     args, unknown_args = parser.parse_known_args()
+
+    if args.server:
+        # Instead use an async interpreter, which has a server. Set settings on that
+        from interpreter import AsyncInterpreter
+
+        interpreter = AsyncInterpreter()
 
     # handle unknown arguments
     if unknown_args:
@@ -471,13 +503,16 @@ def start_terminal_interface(interpreter):
         conversation_navigator(interpreter)
         return
 
-    if args.server:
-        interpreter.server()
-        return
+    if not args.server:
+        # This SHOULD RUN WHEN THE SERVER STARTS. But it can't rn because
+        # if you don't have an API key, a prompt shows up, breaking the whole thing.
+        validate_llm_settings(
+            interpreter
+        )  # This should actually just run interpreter.llm.load() once that's == to validate_llm_settings
 
-    validate_llm_settings(
-        interpreter
-    )  # This should actually just run interpreter.llm.load() once that's == to validate_llm_settings
+    if args.server:
+        interpreter.server.run()
+        return
 
     interpreter.in_terminal_interface = True
 
@@ -541,14 +576,14 @@ def main():
                             contribute = "y"
                         else:
                             print(
-                                "Thanks for your feedback! Would you like to send us this chat so we can improve?\n"
+                                "\nThanks for your feedback! Would you like to send us this chat so we can improve?\n"
                             )
                             contribute = input("(y/n): ").strip().lower()
 
                         if contribute == "y":
                             interpreter.contribute_conversation = True
                             interpreter.display_message(
-                                "\n*Thank you for contributing!*"
+                                "\n*Thank you for contributing!*\n"
                             )
 
                 if (
