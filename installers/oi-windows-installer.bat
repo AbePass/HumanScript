@@ -28,7 +28,7 @@ call opai\Scripts\activate.bat
 
 REM Install the necessary packages
 pip install open-interpreter
-pip install tk pillow pyttsx3 speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb
+pip install tk pillow pyttsx3 speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb shortuuid
 
 REM Install pyaudio
 pip install pyaudio
