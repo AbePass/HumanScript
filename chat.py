@@ -81,7 +81,7 @@ def send_message(event=None):
         if is_relevant_context(context_text):
             sanitized_context = sanitize_context(context_text)
             try:
-                response = get_interpreter_response(sanitized_context)
+                response = get_interpreter_response(sanitized_context, query_text)  # Pass both context and query
             except Exception as e:
                 response = "There was an error processing your request. Please try again."
         else:
@@ -99,10 +99,10 @@ def send_message(event=None):
             tts_engine.say(response)
             tts_engine.runAndWait()
 
-def get_interpreter_response(prompt):
-    # Call the interpreter's chat method with the user's prompt
+def get_interpreter_response(context, query):
+    # Combine context and query for the interpreter's chat method
+    prompt = f"{context}\n\n---\n\n{query}"
     messages = interpreter.chat(prompt, display=False, stream=False)
-    # Extract the response from the messages
     response = messages[-1]['content'] if messages else "No response"
     return response
 
