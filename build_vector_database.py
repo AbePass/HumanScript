@@ -14,11 +14,11 @@ load_dotenv()
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
 CHROMA_PATH = "rag_files"
-SKILLS_PATH = "skills"
+SKILLS_PATH = "corpus"
 
 def load_skills_folder():
     # Create the skills folder
-    skills_folder_path = os.path.join(os.getcwd(), "skills")
+    skills_folder_path = os.path.join(os.getcwd(), "corpus")
     os.makedirs(skills_folder_path, exist_ok=True)
 
     # Load the contents of the skills folder and add them to the vector database
@@ -29,15 +29,15 @@ def load_skills_folder():
     save_to_chroma(chunks)
 
 def load_documents():
-    loader = DirectoryLoader(SKILLS_PATH, glob="*.py")
+    loader = DirectoryLoader(SKILLS_PATH, glob="*.pdf")
     documents = loader.load()
     print(f"Loaded {len(documents)} documents from {SKILLS_PATH}")
     return documents
 
 def split_text(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=5000,
-        chunk_overlap=0,
+        chunk_size=500,
+        chunk_overlap=100,
         length_function=len,
         add_start_index=True,
     )

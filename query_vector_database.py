@@ -4,17 +4,16 @@ import os
 import openai
 import config 
 
-
 CHROMA_PATH = "rag_files"
 
 PROMPT_TEMPLATE = """
-Here are skills that are relevant to the question:
+Here is chunks of data relevant to the question:
 
 {context}
 
 ---
 
-use these if they will help answer the question: {question}
+use these only to answer the following: {question}
 """
 
 RELEVANCE_THRESHOLD = 0.7  # Set your relevance threshold here
@@ -27,7 +26,7 @@ def query_vector_database(query_text):
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
-    results = db.similarity_search_with_relevance_scores(query_text, k=1)
+    results = db.similarity_search_with_relevance_scores(query_text, k=3)
     if len(results) == 0:
         return (None, None)
 
