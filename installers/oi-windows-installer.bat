@@ -24,7 +24,7 @@ REM Set up a virtual environment
 python -m venv opai
 
 REM Activate the virtual environment
-call opai\Scripts\activate.bat
+opai\Scripts\activate
 
 REM Install the necessary packages
 pip install open-interpreter
@@ -36,4 +36,4 @@ pip install pyaudio
 echo.
 echo Open Interpreter has been installed. Run the following command to use it:
 echo.
-echo call opai\Scripts\activate.bat && python chat.py
+echo opai\Scripts\activate && python chat.py
