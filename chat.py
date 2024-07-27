@@ -108,6 +108,12 @@ def sanitize_filename(filename):
     """Sanitize the filename to remove invalid characters."""
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
+import re
+
+def sanitize_filename(filename):
+    """Sanitize the filename to remove invalid characters."""
+    return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
+
 def get_interpreter_response(context, query):
     # Combine context and query for the interpreter's chat method
     prompt = f"{context}\n\n---\n\n{query}"
