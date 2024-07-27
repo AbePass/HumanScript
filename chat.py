@@ -3,22 +3,25 @@ from tkinter import scrolledtext, filedialog, simpledialog, messagebox
 from interpreter import interpreter
 import os
 import speech_recognition as sr
+from openai import OpenAI
 import threading
-import pyttsx3
+from pydub import AudioSegment
+from pydub.playback import play
 import argparse
-import keyboard
 from image_interpreter import encode_image_to_base64, create_image_message
-import pyautogui
 from query_vector_database import query_vector_database
 import config  # Import the new config module
+import tempfile
+from playsound import playsound
+import re
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Open Interpreter Chat UI")
 parser.add_argument('--os', type=str, help='Specify the operating system')
 args = parser.parse_args()
 
-# Initialize text-to-speech engine
-tts_engine = pyttsx3.init()
+# Initialize OpenAI client
+client = OpenAI(api_key=config.openai_key)
 
 selected_image_path = None
 
@@ -99,10 +102,7 @@ def send_message(event=None):
         chat_window.yview(tk.END)
         
         if tts_var.get():
-            tts_engine.say(response)
-            tts_engine.runAndWait()
-
-import re
+            text_to_speech(response)
 
 def sanitize_filename(filename):
     """Sanitize the filename to remove invalid characters."""
@@ -158,6 +158,24 @@ def select_image():
         chat_window.insert(tk.END, "System: Image selected\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
+
+def text_to_speech(text):
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice="alloy",
+        input=text
+    )
+    
+    # Save the audio content to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+        temp_audio.write(response.content)
+        temp_audio_path = temp_audio.name
+    
+    # Play the audio file
+    playsound(temp_audio_path)
+    
+    # Remove the temporary file
+    os.unlink(temp_audio_path)
 
 # Set up the main application window
 root = tk.Tk()
