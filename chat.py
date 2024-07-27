@@ -20,15 +20,13 @@ parser = argparse.ArgumentParser(description="Open Interpreter Chat UI")
 parser.add_argument('--os', type=str, help='Specify the operating system')
 args = parser.parse_args()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=config.openai_key)
 
 selected_image_path = None
 
 def configure_interpreter():
     provider = simpledialog.askstring("Input", "Select provider (azure/openai):")
     config.openai_key = simpledialog.askstring("Input", "Enter OpenAI API Key:")  # Update to use config
-    
+    client = OpenAI(api_key=config.openai_key)
     if provider.lower() == "azure":
         api_key = simpledialog.askstring("Input", "Enter Azure API Key:")
         api_base = simpledialog.askstring("Input", "Enter Azure API Base:")
@@ -39,6 +37,7 @@ def configure_interpreter():
         interpreter.llm.api_base = api_base
         interpreter.llm.api_version = api_version
         interpreter.llm.model = f"azure/{model}"  # Ensure the model is prefixed with 'azure/'
+        client = OpenAI(api_key=config.openai_key)
         interpreter.llm.supports_vision = True
     elif provider.lower() == "openai":
         model = simpledialog.askstring("Input", "Enter OpenAI Model:")
