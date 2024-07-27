@@ -31,16 +31,17 @@ def configure_interpreter():
         api_base = simpledialog.askstring("Input", "Enter Azure API Base:")
         api_version = simpledialog.askstring("Input", "Enter Azure API Version:")
         model = simpledialog.askstring("Input", "Enter Azure Model:")
+        interpreter.llm.provider = "azure"  # Set the provider
         interpreter.llm.api_key = api_key
         interpreter.llm.api_base = api_base
         interpreter.llm.api_version = api_version
-        interpreter.llm.model = model
+        interpreter.llm.model = f"azure/{model}"  # Ensure the model is prefixed with 'azure/'
         interpreter.llm.supports_vision = True
     elif provider.lower() == "openai":
         model = simpledialog.askstring("Input", "Enter OpenAI Model:")
         interpreter.llm.api_key = config.openai_key  # Update to use config
         interpreter.llm.model = model
-        interpreter.llm.supports_vision = False
+        interpreter.llm.supports_vision = True
     else:
         messagebox.showerror("Error", "Invalid provider selected")
         root.quit()
@@ -83,12 +84,14 @@ def send_message(event=None):
             try:
                 response = get_interpreter_response(sanitized_context, query_text)  # Pass both context and query
             except Exception as e:
-                response = "There was an error processing your request. Please try again."
+                response = f"There was an error processing your request: {e}"
+                print(f"Error: {e}")  # Print the exception details
         else:
             try:
                 response = get_interpreter_response(query_text)
             except Exception as e:
-                response = "There was an error processing your request. Please try again."
+                response = f"There was an error processing your request: {e}"
+                print(f"Error: {e}")  # Print the exception details
         
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: " + response + "\n")
@@ -99,10 +102,17 @@ def send_message(event=None):
             tts_engine.say(response)
             tts_engine.runAndWait()
 
+import re
+
+def sanitize_filename(filename):
+    """Sanitize the filename to remove invalid characters."""
+    return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
+
 def get_interpreter_response(context, query):
     # Combine context and query for the interpreter's chat method
     prompt = f"{context}\n\n---\n\n{query}"
-    messages = interpreter.chat(prompt, display=False, stream=False)
+    sanitized_prompt = sanitize_filename(prompt)
+    messages = interpreter.chat(sanitized_prompt, display=False, stream=False)
     response = messages[-1]['content'] if messages else "No response"
     return response
 

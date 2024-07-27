@@ -26,7 +26,7 @@ def query_vector_database(query_text):
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
-    results = db.similarity_search_with_relevance_scores(query_text, k=3)
+    results = db.similarity_search_with_relevance_scores(query_text, k=10)
     if len(results) == 0:
         return (None, None)
 
