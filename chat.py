@@ -3,22 +3,25 @@ from tkinter import scrolledtext, filedialog, simpledialog, messagebox
 from interpreter import interpreter
 import os
 import speech_recognition as sr
+from openai import OpenAI
 import threading
-import pyttsx3
+from pydub import AudioSegment
+from pydub.playback import play
 import argparse
-import keyboard
 from image_interpreter import encode_image_to_base64, create_image_message
-import pyautogui
 from query_vector_database import query_vector_database
 import config  # Import the new config module
+import tempfile
+from playsound import playsound
+import re
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Open Interpreter Chat UI")
 parser.add_argument('--os', type=str, help='Specify the operating system')
 args = parser.parse_args()
 
-# Initialize text-to-speech engine
-tts_engine = pyttsx3.init()
+# Initialize OpenAI client
+client = OpenAI(api_key=config.openai_key)
 
 selected_image_path = None
 
@@ -31,16 +34,17 @@ def configure_interpreter():
         api_base = simpledialog.askstring("Input", "Enter Azure API Base:")
         api_version = simpledialog.askstring("Input", "Enter Azure API Version:")
         model = simpledialog.askstring("Input", "Enter Azure Model:")
+        interpreter.llm.provider = "azure"  # Set the provider
         interpreter.llm.api_key = api_key
         interpreter.llm.api_base = api_base
         interpreter.llm.api_version = api_version
-        interpreter.llm.model = model
+        interpreter.llm.model = f"azure/{model}"  # Ensure the model is prefixed with 'azure/'
         interpreter.llm.supports_vision = True
     elif provider.lower() == "openai":
         model = simpledialog.askstring("Input", "Enter OpenAI Model:")
         interpreter.llm.api_key = config.openai_key  # Update to use config
         interpreter.llm.model = model
-        interpreter.llm.supports_vision = False
+        interpreter.llm.supports_vision = True
     else:
         messagebox.showerror("Error", "Invalid provider selected")
         root.quit()
@@ -83,12 +87,14 @@ def send_message(event=None):
             try:
                 response = get_interpreter_response(sanitized_context, query_text)  # Pass both context and query
             except Exception as e:
-                response = "There was an error processing your request. Please try again."
+                response = f"There was an error processing your request: {e}"
+                print(f"Error: {e}")  # Print the exception details
         else:
             try:
                 response = get_interpreter_response(query_text)
             except Exception as e:
-                response = "There was an error processing your request. Please try again."
+                response = f"There was an error processing your request: {e}"
+                print(f"Error: {e}")  # Print the exception details
         
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: " + response + "\n")
@@ -96,13 +102,17 @@ def send_message(event=None):
         chat_window.yview(tk.END)
         
         if tts_var.get():
-            tts_engine.say(response)
-            tts_engine.runAndWait()
+            text_to_speech(response)
+
+def sanitize_filename(filename):
+    """Sanitize the filename to remove invalid characters."""
+    return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
 def get_interpreter_response(context, query):
     # Combine context and query for the interpreter's chat method
     prompt = f"{context}\n\n---\n\n{query}"
-    messages = interpreter.chat(prompt, display=False, stream=False)
+    sanitized_prompt = sanitize_filename(prompt)
+    messages = interpreter.chat(sanitized_prompt, display=False, stream=False)
     response = messages[-1]['content'] if messages else "No response"
     return response
 
@@ -148,6 +158,24 @@ def select_image():
         chat_window.insert(tk.END, "System: Image selected\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
+
+def text_to_speech(text):
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice="alloy",
+        input=text
+    )
+    
+    # Save the audio content to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+        temp_audio.write(response.content)
+        temp_audio_path = temp_audio.name
+    
+    # Play the audio file
+    playsound(temp_audio_path)
+    
+    # Remove the temporary file
+    os.unlink(temp_audio_path)
 
 # Set up the main application window
 root = tk.Tk()

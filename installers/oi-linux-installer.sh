@@ -14,6 +14,7 @@ source opai/bin/activate
 # Install the necessary packages
 pip install open-interpreter
 pip install tk pillow pyttsx3 speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb shortuuid unstructured
+pip install openai pydub playsound
 
 
 # Install portaudio
