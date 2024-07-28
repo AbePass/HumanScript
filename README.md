@@ -26,4 +26,4 @@ For detailed instructions and tutorials, please refer to the documentation provi
 
 ## Acknowledgements
 
-This project uses [Open Interpreter](https://github.com/KillianLucas/open-interpreter), which is licensed under the MIT License.
+This project uses [Open Interpreter](https://github.com/KillianLucas/open-interpreter), which is licensed under AGPL.
