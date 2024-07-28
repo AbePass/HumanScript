@@ -26,7 +26,6 @@ selected_image_path = None
 def configure_interpreter():
     provider = simpledialog.askstring("Input", "Select provider (azure/openai):")
     config.openai_key = simpledialog.askstring("Input", "Enter OpenAI API Key:")  # Update to use config
-    client = OpenAI(api_key=config.openai_key)
     if provider.lower() == "azure":
         api_key = simpledialog.askstring("Input", "Enter Azure API Key:")
         api_base = simpledialog.askstring("Input", "Enter Azure API Base:")
@@ -165,6 +164,7 @@ def select_image():
         chat_window.yview(tk.END)
 
 def text_to_speech(text):
+    client = OpenAI(api_key=config.openai_key)
     response = client.audio.speech.create(
         model="tts-1",
         voice="alloy",
