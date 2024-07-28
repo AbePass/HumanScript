@@ -12,8 +12,8 @@ from image_interpreter import encode_image_to_base64, create_image_message
 from query_vector_database import query_vector_database
 import config  # Import the new config module
 import tempfile
-from playsound import playsound
 import re
+import pygame
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Open Interpreter Chat UI")
@@ -163,6 +163,9 @@ def select_image():
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
 
+# Initialize pygame mixer
+pygame.mixer.init()
+
 def text_to_speech(text):
     client = OpenAI(api_key=config.openai_key)
     response = client.audio.speech.create(
@@ -177,7 +180,10 @@ def text_to_speech(text):
         temp_audio_path = temp_audio.name
     
     # Play the audio file
-    playsound(temp_audio_path)
+    pygame.mixer.music.load(temp_audio_path)
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(10)
     
     # Remove the temporary file
     os.unlink(temp_audio_path)
