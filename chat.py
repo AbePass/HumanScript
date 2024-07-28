@@ -76,23 +76,13 @@ def send_message(event=None):
             message = user_input
         
         # Query the skills database
-        query_text = user_input
-        context_text, sources = query_vector_database(query_text)
+        context_text, sources = query_vector_database(user_input)
         
-        # Determine the response based on the relevance of the context
-        if is_relevant_context(context_text):
-            sanitized_context = sanitize_context(context_text)
-            try:
-                response = get_interpreter_response(sanitized_context, query_text)  # Pass both context and query
-            except Exception as e:
-                response = f"There was an error processing your request: {e}"
-                print(f"Error: {e}")  # Print the exception details
-        else:
-            try:
-                response = get_interpreter_response(query_text)
-            except Exception as e:
-                response = f"There was an error processing your request: {e}"
-                print(f"Error: {e}")  # Print the exception details
+        try:
+            response = get_interpreter_response(context_text, user_input)
+        except Exception as e:
+            response = f"There was an error processing your request: {e}"
+            print(f"Error: {e}")  # Print the exception details
         
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: " + response + "\n")
@@ -113,8 +103,13 @@ def sanitize_filename(filename):
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
 def get_interpreter_response(context, query):
-    # Combine context and query for the interpreter's chat method
-    prompt = f"{context}\n\n---\n\n{query}"
+    # If context is None or empty, just use the query
+    if not context:
+        prompt = query
+    else:
+        # Combine context and query in a more clear way
+        prompt = f"Context: {context}\n\nQuery: {query}"
+    
     sanitized_prompt = sanitize_filename(prompt)
     messages = interpreter.chat(sanitized_prompt, display=False, stream=False)
     response = messages[-1]['content'] if messages else "No response"
@@ -166,6 +161,8 @@ def select_image():
 # Initialize pygame mixer
 pygame.mixer.init()
 
+import time
+
 def text_to_speech(text):
     client = OpenAI(api_key=config.openai_key)
     response = client.audio.speech.create(
@@ -185,8 +182,16 @@ def text_to_speech(text):
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
     
-    # Remove the temporary file
-    os.unlink(temp_audio_path)
+    # Wait a bit before trying to delete the file
+    pygame.mixer.music.unload()
+    time.sleep(0.1)
+    
+    # Try to remove the temporary file, but don't raise an error if it fails
+    try:
+        os.unlink(temp_audio_path)
+    except PermissionError:
+        print(f"Could not delete temporary file: {temp_audio_path}")
+
 
 # Set up the main application window
 root = tk.Tk()

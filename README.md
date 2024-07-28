@@ -23,3 +23,7 @@ To get started with the Raspberry Pi based dev kit powered by Open Interpreter, 
 4. **Start Developing**: Begin creating your projects using the powerful combination of Raspberry Pi and Open Interpreter.
 
 For detailed instructions and tutorials, please refer to the documentation provided in this repository.
+
+## Acknowledgements
+
+This project uses [Open Interpreter](https://github.com/KillianLucas/open-interpreter), which is licensed under the MIT License.
