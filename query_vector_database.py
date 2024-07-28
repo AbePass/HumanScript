@@ -29,7 +29,7 @@ def query_vector_database(query_text):
     total_elements = db._collection.count()
     
     # Adjust k to be the minimum of 10 and the total number of elements
-    k = min(10, total_elements)
+    k = min(6, total_elements)
     
     # Search the DB.
     results = db.similarity_search_with_relevance_scores(query_text, k=k)
@@ -41,6 +41,7 @@ def query_vector_database(query_text):
     if not filtered_results:
         return (query_text, None)
 
+    # Construct context text only from filtered results
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in filtered_results])
     sources = [doc.metadata.get("source", None) for doc, _score in filtered_results]
     return (context_text, sources)
