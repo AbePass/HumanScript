@@ -29,7 +29,7 @@ def load_skills_folder():
     save_to_chroma(chunks)
 
 def load_documents():
-    loader = DirectoryLoader(SKILLS_PATH, glob="*.pdf")
+    loader = DirectoryLoader(SKILLS_PATH, glob="*.*")
     documents = loader.load()
     print(f"Loaded {len(documents)} documents from {SKILLS_PATH}")
     return documents
