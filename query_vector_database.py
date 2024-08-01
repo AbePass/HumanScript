@@ -1,25 +1,13 @@
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 import os
-import openai
-import config 
 
-CHROMA_PATH = "rag_files"
-
-PROMPT_TEMPLATE = """
-Here is chunks of data relevant to the question:
-
-{context}
-
----
-
-use these only to answer the following: {question}
-"""
+CHROMA_PATH = "db"
 
 RELEVANCE_THRESHOLD = 0.7  # Set your relevance threshold here
 
 def query_vector_database(query_text):
-    openai_key = config.openai_key
+    openai_key = os.environ["OPENAI_API_KEY"]
 
     # Prepare the DB.
     embedding_function = OpenAIEmbeddings(openai_api_key=openai_key)

@@ -13,7 +13,7 @@ load_dotenv()
 # Set OpenAI API key
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
-CHROMA_PATH = "rag_files"
+CHROMA_PATH = "db"
 SKILLS_PATH = "corpus"
 
 def load_skills_folder():

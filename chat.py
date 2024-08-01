@@ -10,7 +10,6 @@ from pydub.playback import play
 import argparse
 from image_interpreter import encode_image_to_base64, create_image_message
 from query_vector_database import query_vector_database
-import config  # Import the new config module
 import tempfile
 import re
 import pygame
@@ -25,22 +24,21 @@ selected_image_path = None
 
 def configure_interpreter():
     provider = simpledialog.askstring("Input", "Select provider (azure/openai):")
-    config.openai_key = simpledialog.askstring("Input", "Enter OpenAI API Key:")  # Update to use config
+    os.environ["OPENAI_API_KEY"] = simpledialog.askstring("Input", "Enter OpenAI API Key:")  # Update to use config
     if provider.lower() == "azure":
-        api_key = simpledialog.askstring("Input", "Enter Azure API Key:")
-        api_base = simpledialog.askstring("Input", "Enter Azure API Base:")
-        api_version = simpledialog.askstring("Input", "Enter Azure API Version:")
+        os.environ["AZURE_API_KEY"] = simpledialog.askstring("Input", "Enter Azure API Key:")
+        os.environ["AZURE_API_BASE"] = simpledialog.askstring("Input", "Enter Azure API Base:")
+        os.environ["AZURE_API_VERSION"] = simpledialog.askstring("Input", "Enter Azure API Version:")
         model = simpledialog.askstring("Input", "Enter Azure Model:")
         interpreter.llm.provider = "azure"  # Set the provider
-        interpreter.llm.api_key = api_key
-        interpreter.llm.api_base = api_base
-        interpreter.llm.api_version = api_version
+        interpreter.llm.api_key = os.environ["AZURE_API_KEY"]
+        interpreter.llm.api_base = os.environ["AZURE_API_BASE"]
+        interpreter.llm.api_version = os.environ["AZURE_API_VERSION"]
         interpreter.llm.model = f"azure/{model}"  # Ensure the model is prefixed with 'azure/'
-        client = OpenAI(api_key=config.openai_key)
         interpreter.llm.supports_vision = True
     elif provider.lower() == "openai":
         model = simpledialog.askstring("Input", "Enter OpenAI Model:")
-        interpreter.llm.api_key = config.openai_key  # Update to use config
+        interpreter.llm.api_key = os.environ["OPENAI_API_KEY"]
         interpreter.llm.model = model
         interpreter.llm.supports_vision = True
     else:
@@ -164,7 +162,7 @@ pygame.mixer.init()
 import time
 
 def text_to_speech(text):
-    client = OpenAI(api_key=config.openai_key)
+    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
     response = client.audio.speech.create(
         model="tts-1",
         voice="alloy",
