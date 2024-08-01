@@ -6,7 +6,6 @@ import speech_recognition as sr
 from openai import OpenAI
 import threading
 import argparse
-from image_interpreter import encode_image_to_base64, create_image_message
 from query_vector_database import query_vector_database
 import tempfile
 import re
@@ -64,12 +63,7 @@ def send_message(event=None):
         chat_window.config(state=tk.DISABLED)
         input_box.delete("1.0", tk.END)
         
-        if selected_image_path:
-            encoded_image = encode_image_to_base64(selected_image_path)
-            message = create_image_message(encoded_image)
-            message[0]['content'] = user_input
-        else:
-            message = user_input
+        message = user_input
         
         # Query the skills database
         context_text, sources = query_vector_database(user_input)
@@ -145,15 +139,6 @@ def recognize_speech():
 def start_recognition_thread():
     threading.Thread(target=recognize_speech).start()
 
-def select_image():
-    global selected_image_path
-    selected_image_path = filedialog.askopenfilename()
-    if selected_image_path:
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "System: Image selected\n")
-        chat_window.config(state=tk.DISABLED)
-        chat_window.yview(tk.END)
-
 # Initialize pygame mixer
 pygame.mixer.init()
 
@@ -216,10 +201,6 @@ send_button.pack(padx=10, pady=10, side=tk.LEFT)
 # Create a speech-to-text button
 speech_button = tk.Button(root, text="Speak", command=start_recognition_thread)
 speech_button.pack(padx=10, pady=10, side=tk.RIGHT)
-
-# Create a button to select an image
-image_button = tk.Button(root, text="Attach Image", command=select_image)
-image_button.pack(padx=10, pady=10, side=tk.RIGHT)
 
 # Create a checkbox to toggle text-to-speech
 tts_var = tk.BooleanVar()
