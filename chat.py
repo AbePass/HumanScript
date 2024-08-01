@@ -5,8 +5,6 @@ import os
 import speech_recognition as sr
 from openai import OpenAI
 import threading
-from pydub import AudioSegment
-from pydub.playback import play
 import argparse
 from image_interpreter import encode_image_to_base64, create_image_message
 from query_vector_database import query_vector_database
