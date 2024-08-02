@@ -1,0 +1,2 @@
+https://docs.arduino.cc/built-in-examples/
+https://arduino.github.io/arduino-cli/0.34/commands/arduino-cli/

@@ -11,17 +11,33 @@ import tempfile
 import re
 import pygame
 
-# Argument parsing
-parser = argparse.ArgumentParser(description="Open Interpreter Chat UI")
-parser.add_argument('--os', type=str, help='Specify the operating system')
-args = parser.parse_args()
-
 
 selected_image_path = None
 
 def configure_interpreter():
-    provider = simpledialog.askstring("Input", "Select provider (azure/openai):")
-    os.environ["OPENAI_API_KEY"] = simpledialog.askstring("Input", "Enter OpenAI API Key:")  # Update to use config
+    interpreter.custom_instructions = '''
+    You have full permission to run Python code and shell commands on the user's computer. 
+    Use Desktop as the working directory. Save all files in Desktop unless otherwise specified.
+    If the query involves running a command or code, execute it and provide the output. 
+    If additional context is provided, use it to inform your decision-making.
+    You will recieve prompts in the format "Context: {context}\n\nQuery: {query}"
+    Only respond with the answer to the query. Use the context to help you answer the query.
+    '''
+
+    providers = ["azure", "openai", "anthropic"]
+    provider = simpledialog.askstring("Input", f"Select provider ({'/'.join(providers)}):")
+    
+    if provider.lower() not in providers:
+        messagebox.showerror("Error", "Invalid provider selected")
+        root.quit()
+        return
+    
+    os.environ["OPENAI_API_KEY"] = simpledialog.askstring("Input", "Enter OpenAI API Key: (needed for lanchain rag)")
+
+    interpreter.llm.supports_vision = True
+    interpreter.auto_run = True
+    interpreter.loop = True
+    
     if provider.lower() == "azure":
         os.environ["AZURE_API_KEY"] = simpledialog.askstring("Input", "Enter Azure API Key:")
         os.environ["AZURE_API_BASE"] = simpledialog.askstring("Input", "Enter Azure API Base:")
@@ -32,19 +48,14 @@ def configure_interpreter():
         interpreter.llm.api_base = os.environ["AZURE_API_BASE"]
         interpreter.llm.api_version = os.environ["AZURE_API_VERSION"]
         interpreter.llm.model = f"azure/{model}"  # Ensure the model is prefixed with 'azure/'
-        interpreter.llm.supports_vision = True
     elif provider.lower() == "openai":
         model = simpledialog.askstring("Input", "Enter OpenAI Model:")
         interpreter.llm.api_key = os.environ["OPENAI_API_KEY"]
         interpreter.llm.model = model
-        interpreter.llm.supports_vision = True
-    else:
-        messagebox.showerror("Error", "Invalid provider selected")
-        root.quit()
-
-# Set the operating system if provided
-if args.os:
-    interpreter.os = args.os
+    elif provider.lower() == "anthropic":
+        model = simpledialog.askstring("Input", "Enter Anthropic Model:")
+        interpreter.llm.api_key = os.environ["ANTHROPIC_API_KEY"]
+        interpreter.llm.model = model
 
 def is_relevant_context(context_text):
     """Check if the context is relevant by ensuring it contains meaningful content."""
