@@ -11,11 +11,10 @@ import shutil
 load_dotenv()
 
 CHROMA_PATH = "db"
-SKILLS_PATH = "corpus"
+DOCS_PATH = "corpus"
 URLS_FILE = "corpus/urls.txt"
 
-def load_skills_folder():
-    # Create the skills folder
+def load_docs_folder():
     skills_folder_path = os.path.join(os.getcwd(), "corpus")
     os.makedirs(skills_folder_path, exist_ok=True)
 
@@ -26,9 +25,9 @@ def load_skills_folder():
 
 def load_documents():
     # Load local documents
-    local_loader = DirectoryLoader(SKILLS_PATH, glob="*.*")
+    local_loader = DirectoryLoader(DOCS_PATH, glob="*.*")
     local_documents = local_loader.load()
-    print(f"Loaded {len(local_documents)} local documents from {SKILLS_PATH}")
+    print(f"Loaded {len(local_documents)} local documents from {DOCS_PATH}")
 
     # Load URLs
     url_documents = load_urls()
@@ -83,4 +82,4 @@ def save_to_chroma(chunks: list[Document]):
     print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}.")
 
 if __name__ == "__main__":
-    load_skills_folder()
+    load_docs_folder()

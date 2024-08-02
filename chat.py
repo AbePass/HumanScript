@@ -1,18 +1,16 @@
 import tkinter as tk
-from tkinter import scrolledtext, filedialog, simpledialog, messagebox
+from tkinter import scrolledtext, simpledialog, messagebox
 from interpreter import interpreter
 import os
 import speech_recognition as sr
 from openai import OpenAI
 import threading
-import argparse
 from query_vector_database import query_vector_database
 import tempfile
 import re
 import pygame
-
-
-selected_image_path = None
+import time
+from tkinter import ttk 
 
 def configure_interpreter():
     interpreter.custom_instructions = '''
@@ -22,22 +20,41 @@ def configure_interpreter():
     If additional context is provided, use it to inform your decision-making.
     You will recieve prompts in the format "Context: {context}\n\nQuery: {query}"
     Only respond with the answer to the query. Use the context to help you answer the query.
+    If you need to refer to previous messages, use the conversation_history folder
     '''
 
     providers = ["azure", "openai", "anthropic"]
-    provider = simpledialog.askstring("Input", f"Select provider ({'/'.join(providers)}):")
     
-    if provider.lower() not in providers:
-        messagebox.showerror("Error", "Invalid provider selected")
-        root.quit()
-        return
+    # Create a new top-level window for provider selection
+    provider_window = tk.Toplevel(root)
+    provider_window.title("Select Provider")
+    provider_window.geometry("300x100")
     
+    provider_var = tk.StringVar()
+    provider_dropdown = ttk.Combobox(provider_window, textvariable=provider_var, values=providers, state="readonly")
+    provider_dropdown.set("Select provider")
+    provider_dropdown.pack(pady=10)
+    
+    def on_provider_select():
+        provider = provider_var.get()
+        provider_window.destroy()
+        configure_provider(provider)
+    
+    select_button = tk.Button(provider_window, text="Select", command=on_provider_select)
+    select_button.pack(pady=10)
+    
+    provider_window.transient(root)
+    provider_window.grab_set()
+    root.wait_window(provider_window)
+
+def configure_provider(provider):
     os.environ["OPENAI_API_KEY"] = simpledialog.askstring("Input", "Enter OpenAI API Key: (needed for lanchain rag)")
 
     interpreter.llm.supports_vision = True
+    interpreter.llm.supports_functions = True
     interpreter.auto_run = True
-    interpreter.loop = True
-    
+    interpreter.llm.temperature = 0.5
+
     if provider.lower() == "azure":
         os.environ["AZURE_API_KEY"] = simpledialog.askstring("Input", "Enter Azure API Key:")
         os.environ["AZURE_API_BASE"] = simpledialog.askstring("Input", "Enter Azure API Base:")
@@ -53,6 +70,7 @@ def configure_interpreter():
         interpreter.llm.api_key = os.environ["OPENAI_API_KEY"]
         interpreter.llm.model = model
     elif provider.lower() == "anthropic":
+        os.environ["ANTHROPIC_API_KEY"] = simpledialog.askstring("Input", "Enter Anthropic API Key:")
         model = simpledialog.askstring("Input", "Enter Anthropic Model:")
         interpreter.llm.api_key = os.environ["ANTHROPIC_API_KEY"]
         interpreter.llm.model = model
@@ -73,9 +91,6 @@ def send_message(event=None):
         chat_window.insert(tk.END, "You: " + user_input + "\n")
         chat_window.config(state=tk.DISABLED)
         input_box.delete("1.0", tk.END)
-        
-        message = user_input
-        
         # Query the skills database
         context_text, sources = query_vector_database(user_input)
         
@@ -87,6 +102,8 @@ def send_message(event=None):
         
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: " + response + "\n")
+        if sources:
+            chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         
@@ -97,11 +114,6 @@ def sanitize_filename(filename):
     """Sanitize the filename to remove invalid characters."""
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
-import re
-
-def sanitize_filename(filename):
-    """Sanitize the filename to remove invalid characters."""
-    return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
 def get_interpreter_response(context, query):
     # If context is None or empty, just use the query
@@ -117,14 +129,23 @@ def get_interpreter_response(context, query):
     return response
 
 def interrupt(event=None):
-    # Reset the interpreter to stop any ongoing processing
+    # reset the interpreter
     interpreter.reset()
+    
+    # Stop the text-to-speech playback if pygame mixer is initialized
+    if pygame.mixer.get_init():
+        pygame.mixer.music.stop()
+    
     chat_window.config(state=tk.NORMAL)
     chat_window.insert(tk.END, "System: The operation has been interrupted.\n")
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
 
 def recognize_speech():
+        # Stop the text-to-speech playback if pygame mixer is initialized
+    if pygame.mixer.get_init():
+        pygame.mixer.music.stop()
+        
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         chat_window.config(state=tk.NORMAL)
@@ -132,31 +153,38 @@ def recognize_speech():
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         audio = recognizer.listen(source)
+    
     try:
-        user_input = recognizer.recognize_google(audio)
+        # Save the audio to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+            temp_audio.write(audio.get_wav_data())
+            temp_audio_path = temp_audio.name
+        
+        # Transcribe using Whisper
+        with open(temp_audio_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_file
+            )
+        
+        user_input = transcript.text
         input_box.insert(tk.END, user_input)
         send_message()
-    except sr.UnknownValueError:
+    except Exception as e:
         chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "System: Could not understand audio\n")
+        chat_window.insert(tk.END, f"System: Error in speech recognition: {str(e)}\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
-    except sr.RequestError as e:
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, f"System: Could not request results; {e}\n")
-        chat_window.config(state=tk.DISABLED)
-        chat_window.yview(tk.END)
+    finally:
+        # Clean up the temporary file
+        if 'temp_audio_path' in locals():
+            os.unlink(temp_audio_path)
 
 def start_recognition_thread():
     threading.Thread(target=recognize_speech).start()
 
-# Initialize pygame mixer
-pygame.mixer.init()
-
-import time
-
 def text_to_speech(text):
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+    pygame.mixer.init()
     response = client.audio.speech.create(
         model="tts-1",
         voice="alloy",
@@ -184,13 +212,14 @@ def text_to_speech(text):
     except PermissionError:
         print(f"Could not delete temporary file: {temp_audio_path}")
 
-
 # Set up the main application window
 root = tk.Tk()
 root.title("Chat UI")
 
 # Configure the interpreter
 configure_interpreter()
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 # Bind Ctrl+C to the interrupt function
 root.bind('<Control-c>', interrupt)
