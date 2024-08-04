@@ -12,6 +12,8 @@ import pygame
 import time
 from tkinter import ttk 
 
+use_knowledge = True
+
 def configure_interpreter():
     interpreter.custom_instructions = '''
     You have full permission to run Python code and shell commands on the user's computer. 
@@ -53,7 +55,8 @@ def configure_provider(provider):
     interpreter.llm.supports_vision = True
     interpreter.llm.supports_functions = True
     interpreter.auto_run = True
-    interpreter.llm.temperature = 0.5
+    interpreter.llm.temperature = 0.3
+    interpreter.llm.max_tokens = 10000
 
     if provider.lower() == "azure":
         os.environ["AZURE_API_KEY"] = simpledialog.askstring("Input", "Enter Azure API Key:")
@@ -92,7 +95,10 @@ def send_message(event=None):
         chat_window.config(state=tk.DISABLED)
         input_box.delete("1.0", tk.END)
         # Query the skills database
-        context_text, sources = query_vector_database(user_input)
+        if use_knowledge:
+            context_text, sources = query_vector_database(user_input)
+        else:
+            context_text = None
         
         try:
             response = get_interpreter_response(context_text, user_input)
@@ -102,8 +108,9 @@ def send_message(event=None):
         
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: " + response + "\n")
-        if sources:
-            chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
+        if use_knowledge:
+            if sources:
+                chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         
@@ -130,7 +137,7 @@ def get_interpreter_response(context, query):
 
 def interrupt(event=None):
     # reset the interpreter
-    interpreter.reset()
+    #interpreter.reset()
     
     # Stop the text-to-speech playback if pygame mixer is initialized
     if pygame.mixer.get_init():
@@ -212,6 +219,48 @@ def text_to_speech(text):
     except PermissionError:
         print(f"Could not delete temporary file: {temp_audio_path}")
 
+
+def open_settings():
+    settings_window = tk.Toplevel(root)
+    settings_window.title("Settings")
+    settings_window.geometry("400x300")
+
+    ttk.Label(settings_window, text="Use Knowledge Base:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
+    use_knowledge_var = tk.BooleanVar(value=use_knowledge)
+    ttk.Checkbutton(settings_window, variable=use_knowledge_var).grid(row=0, column=1, padx=10, pady=5)
+
+    ttk.Label(settings_window, text="Supports Vision:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
+    supports_vision_var = tk.BooleanVar(value=interpreter.llm.supports_vision)
+    ttk.Checkbutton(settings_window, variable=supports_vision_var).grid(row=1, column=1, padx=10, pady=5)
+
+    ttk.Label(settings_window, text="Supports Functions:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
+    supports_functions_var = tk.BooleanVar(value=interpreter.llm.supports_functions)
+    ttk.Checkbutton(settings_window, variable=supports_functions_var).grid(row=2, column=1, padx=10, pady=5)
+
+    ttk.Label(settings_window, text="Auto Run:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
+    auto_run_var = tk.BooleanVar(value=interpreter.auto_run)
+    ttk.Checkbutton(settings_window, variable=auto_run_var).grid(row=3, column=1, padx=10, pady=5)
+
+    ttk.Label(settings_window, text="Temperature:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
+    temperature_var = tk.DoubleVar(value=interpreter.llm.temperature)
+    ttk.Entry(settings_window, textvariable=temperature_var).grid(row=4, column=1, padx=10, pady=5)
+
+    ttk.Label(settings_window, text="Max Tokens:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
+    max_tokens_var = tk.IntVar(value=interpreter.llm.max_tokens)
+    ttk.Entry(settings_window, textvariable=max_tokens_var).grid(row=5, column=1, padx=10, pady=5)
+
+    def save_settings():
+        global use_knowledge
+        use_knowledge = use_knowledge_var.get()
+        interpreter.llm.supports_vision = supports_vision_var.get()
+        interpreter.llm.supports_functions = supports_functions_var.get()
+        interpreter.auto_run = auto_run_var.get()
+        interpreter.llm.temperature = temperature_var.get()
+        interpreter.llm.max_tokens = max_tokens_var.get()
+        settings_window.destroy()
+
+    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=6, column=0, columnspan=2, pady=20)
+
 # Set up the main application window
 root = tk.Tk()
 root.title("Chat UI")
@@ -234,13 +283,21 @@ chat_window.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 input_box = tk.Text(root, height=3)
 input_box.pack(padx=10, pady=10, fill=tk.X, expand=False)
 
+# Create a frame for buttons
+button_frame = tk.Frame(root)
+button_frame.pack(padx=10, pady=10, fill=tk.X)
+
 # Create a send button
-send_button = tk.Button(root, text="Send", command=send_message)
-send_button.pack(padx=10, pady=10, side=tk.LEFT)
+send_button = tk.Button(button_frame, text="Send", command=send_message)
+send_button.pack(side=tk.LEFT, padx=5)
 
 # Create a speech-to-text button
-speech_button = tk.Button(root, text="Speak", command=start_recognition_thread)
-speech_button.pack(padx=10, pady=10, side=tk.RIGHT)
+speech_button = tk.Button(button_frame, text="Speak", command=start_recognition_thread)
+speech_button.pack(side=tk.LEFT, padx=5)
+
+# Create a settings button
+settings_button = tk.Button(button_frame, text="Settings", command=open_settings)
+settings_button.pack(side=tk.LEFT, padx=5)
 
 # Create a checkbox to toggle text-to-speech
 tts_var = tk.BooleanVar()
