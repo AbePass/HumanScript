@@ -76,7 +76,7 @@ def configure_provider(provider):
         os.environ["ANTHROPIC_API_KEY"] = simpledialog.askstring("Input", "Enter Anthropic API Key:")
         model = simpledialog.askstring("Input", "Enter Anthropic Model:")
         interpreter.llm.api_key = os.environ["ANTHROPIC_API_KEY"]
-        interpreter.llm.model = model
+        interpreter.llm.model = f"anthropic/{model}"
 
 def send_message(event=None):
     user_input = input_box.get("1.0", tk.END).strip()
