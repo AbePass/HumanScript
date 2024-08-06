@@ -56,7 +56,7 @@ def configure_provider(provider):
     interpreter.llm.supports_functions = True
     interpreter.auto_run = True
     interpreter.llm.temperature = 0.3
-    interpreter.llm.max_tokens = 10000
+    interpreter.llm.max_tokens = 4096
 
     if provider.lower() == "azure":
         os.environ["AZURE_API_KEY"] = simpledialog.askstring("Input", "Enter Azure API Key:")
@@ -77,15 +77,6 @@ def configure_provider(provider):
         model = simpledialog.askstring("Input", "Enter Anthropic Model:")
         interpreter.llm.api_key = os.environ["ANTHROPIC_API_KEY"]
         interpreter.llm.model = model
-
-def is_relevant_context(context_text):
-    """Check if the context is relevant by ensuring it contains meaningful content."""
-    return context_text and len(context_text.strip()) > 0
-
-def sanitize_context(context_text):
-    """Sanitize context to ensure it is safe to use."""
-    sanitized_text = context_text.replace("\n", " ").replace("\r", " ").strip()
-    return sanitized_text[:500]  # Limit context text length for testing
 
 def send_message(event=None):
     user_input = input_box.get("1.0", tk.END).strip()
@@ -121,7 +112,6 @@ def sanitize_filename(filename):
     """Sanitize the filename to remove invalid characters."""
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
-
 def get_interpreter_response(context, query):
     # If context is None or empty, just use the query
     if not context:
@@ -135,16 +125,24 @@ def get_interpreter_response(context, query):
     response = messages[-1]['content'] if messages else "No response"
     return response
 
-def interrupt(event=None):
+def reset_chat():
     # reset the interpreter
-    #interpreter.reset()
+    interpreter.reset()
+
+    #reset the chat window
+    
+    chat_window.config(state=tk.NORMAL)
+    chat_window.delete("1.0", tk.END)
+    chat_window.config(state=tk.DISABLED)
+
+def interrupt(event=None):
+
     
     # Stop the text-to-speech playback if pygame mixer is initialized
     if pygame.mixer.get_init():
         pygame.mixer.music.stop()
     
     chat_window.config(state=tk.NORMAL)
-    chat_window.insert(tk.END, "System: The operation has been interrupted.\n")
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
 
@@ -218,7 +216,6 @@ def text_to_speech(text):
         os.unlink(temp_audio_path)
     except PermissionError:
         print(f"Could not delete temporary file: {temp_audio_path}")
-
 
 def open_settings():
     settings_window = tk.Toplevel(root)
@@ -298,6 +295,14 @@ speech_button.pack(side=tk.LEFT, padx=5)
 # Create a settings button
 settings_button = tk.Button(button_frame, text="Settings", command=open_settings)
 settings_button.pack(side=tk.LEFT, padx=5)
+
+# Create a reset button
+reset_button = tk.Button(button_frame, text="Reset", command=reset_chat)
+reset_button.pack(side=tk.LEFT, padx=5)
+
+# Create an interrupt button
+interrupt_button = tk.Button(button_frame, text="Interrupt", command=interrupt)
+interrupt_button.pack(side=tk.LEFT, padx=5)
 
 # Create a checkbox to toggle text-to-speech
 tts_var = tk.BooleanVar()
