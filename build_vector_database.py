@@ -11,7 +11,7 @@ import shutil
 load_dotenv()
 
 CHROMA_PATH = "db"
-DOCS_PATH = "corpus"
+DOCS_PATH = "corpus/documents"
 URLS_FILE = "corpus/urls.txt"
 
 def load_docs_folder():
