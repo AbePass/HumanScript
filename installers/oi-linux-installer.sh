@@ -13,17 +13,14 @@ source opai/bin/activate
 
 # Install the necessary packages
 pip install open-interpreter
-pip install tk pillow pyttsx3 speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb shortuuid unstructured
-pip install openai pydub playsound
+pip install open-interpreter tk pillow speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb openai pygame python-dotenv
 
-# Install portaudio
-sudo apt-get install portaudio19-dev
+# Install system dependencies
+sudo apt-get update
+sudo apt-get install -y portaudio19-dev ffmpeg libsdl2-mixer-2.0-0
 
 # Install pyaudio
 pip install pyaudio
-
-# Install FFmpeg
-sudo apt-get install ffmpeg
 
 echo ""
 echo "Open Interpreter has been installed. Run the following command to use it: "

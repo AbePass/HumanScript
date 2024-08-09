@@ -1,40 +1,35 @@
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+from langchain_openai import ChatOpenAI
 import os
-import openai
-import config 
 
-CHROMA_PATH = "rag_files"
-
-PROMPT_TEMPLATE = """
-Here is chunks of data relevant to the question:
-
-{context}
-
----
-
-use these only to answer the following: {question}
-"""
-
-RELEVANCE_THRESHOLD = 0.7  # Set your relevance threshold here
+CHROMA_PATH = "db"
 
 def query_vector_database(query_text):
-    openai_key = config.openai_key
+    openai_key = os.environ["OPENAI_API_KEY"]
 
-    # Prepare the DB.
+    # Prepare the DB and retriever
     embedding_function = OpenAIEmbeddings(openai_api_key=openai_key)
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+    base_retriever = db.as_retriever(search_type="similarity", search_kwargs={"k": 10})
 
-    # Search the DB.
-    results = db.similarity_search_with_relevance_scores(query_text, k=10)
-    if len(results) == 0:
-        return (None, None)
+    # Set up the contextual compression retriever
+    llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
+    compressor = LLMChainExtractor.from_llm(llm)
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor,
+        base_retriever=base_retriever
+    )
 
-    # Filter results based on relevance threshold
-    filtered_results = [(doc, score) for doc, score in results if score >= RELEVANCE_THRESHOLD]
-    if not filtered_results:
-        return (query_text, None)
+    # Retrieve and compress relevant documents
+    compressed_docs = compression_retriever.invoke(query_text)
 
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in filtered_results])
-    sources = [doc.metadata.get("source", None) for doc, _score in filtered_results]
-    return (context_text, sources)
+    # Format the context
+    context = "\n\n".join(doc.page_content for doc in compressed_docs)
+
+    # Get the sources
+    sources = [doc.metadata.get("source", None) for doc in compressed_docs]
+
+    return context, sources
