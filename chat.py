@@ -17,13 +17,14 @@ use_knowledge = True
 def configure_interpreter():
     #TODO: system_message use that
     interpreter.system_message = '''
-    You have full permission to run Python code and shell commands on the user's computer. 
+    You have **full permission** to run code and shell commands on the user's computer. 
     Use Desktop as the working directory. Save all files in Desktop unless otherwise specified.
     If the query involves running a command or code, execute it and provide the output. 
     If additional context is provided, use it to inform your decision-making.
     You will recieve prompts in the format "Context: {context}\n\nQuery: {query}"
     Only respond with the answer to the query. Use the context to help you answer the query.
     If you need to refer to previous messages, use the conversation_history folder
+    If you need to search the internet, use the computer.browser.search(query) function.
     '''
 
     providers = ["azure", "openai", "anthropic"]
@@ -56,8 +57,10 @@ def configure_provider(provider):
     interpreter.llm.supports_vision = True
     interpreter.llm.supports_functions = True
     interpreter.auto_run = True
+    interpreter.loop = True
     interpreter.llm.temperature = 0.3
     interpreter.llm.max_tokens = 4096
+    interpreter.llm.context_window = 10000
     interpreter.conversation_history_path = "conversation_history"
     interpreter.computer.import_computer_api = True
 
@@ -235,6 +238,10 @@ def open_settings():
     supports_functions_var = tk.BooleanVar(value=interpreter.llm.supports_functions)
     ttk.Checkbutton(settings_window, variable=supports_functions_var).grid(row=2, column=1, padx=10, pady=5)
 
+    ttk.Label(settings_window, text="Loop:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
+    loop_var = tk.BooleanVar(value=interpreter.loop)
+    ttk.Checkbutton(settings_window, variable=loop_var).grid(row=3, column=1, padx=10, pady=5)
+
     ttk.Label(settings_window, text="Auto Run:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
     auto_run_var = tk.BooleanVar(value=interpreter.auto_run)
     ttk.Checkbutton(settings_window, variable=auto_run_var).grid(row=3, column=1, padx=10, pady=5)
@@ -243,9 +250,13 @@ def open_settings():
     temperature_var = tk.DoubleVar(value=interpreter.llm.temperature)
     ttk.Entry(settings_window, textvariable=temperature_var).grid(row=4, column=1, padx=10, pady=5)
 
-    ttk.Label(settings_window, text="Max Tokens:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(settings_window, text="Max Response Tokens:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
     max_tokens_var = tk.IntVar(value=interpreter.llm.max_tokens)
     ttk.Entry(settings_window, textvariable=max_tokens_var).grid(row=5, column=1, padx=10, pady=5)
+
+    ttk.Label(settings_window, text="Max Context Tokens:").grid(row=6, column=0, padx=10, pady=5, sticky="w")
+    context_window_var = tk.IntVar(value=interpreter.llm.context_window)
+    ttk.Entry(settings_window, textvariable=context_window_var).grid(row=6, column=1, padx=10, pady=5)
 
     def save_settings():
         global use_knowledge
