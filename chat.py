@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import scrolledtext, simpledialog, messagebox
+from tkinter import scrolledtext, simpledialog
 from interpreter import interpreter
 import os
 import speech_recognition as sr
@@ -15,7 +15,8 @@ from tkinter import ttk
 use_knowledge = True
 
 def configure_interpreter():
-    interpreter.custom_instructions = '''
+    #TODO: system_message use that
+    interpreter.system_message = '''
     You have full permission to run Python code and shell commands on the user's computer. 
     Use Desktop as the working directory. Save all files in Desktop unless otherwise specified.
     If the query involves running a command or code, execute it and provide the output. 
@@ -57,6 +58,8 @@ def configure_provider(provider):
     interpreter.auto_run = True
     interpreter.llm.temperature = 0.3
     interpreter.llm.max_tokens = 4096
+    interpreter.conversation_history_path = "conversation_history"
+    interpreter.computer.import_computer_api = True
 
     if provider.lower() == "azure":
         os.environ["AZURE_API_KEY"] = simpledialog.askstring("Input", "Enter Azure API Key:")
@@ -85,7 +88,7 @@ def send_message(event=None):
         chat_window.insert(tk.END, "You: " + user_input + "\n")
         chat_window.config(state=tk.DISABLED)
         input_box.delete("1.0", tk.END)
-        # Query the skills database
+        # Query the database
         if use_knowledge:
             context_text, sources = query_vector_database(user_input)
         else:
@@ -128,7 +131,6 @@ def get_interpreter_response(context, query):
 def reset_chat():
     # reset the interpreter
     interpreter.reset()
-
     #reset the chat window
     
     chat_window.config(state=tk.NORMAL)
@@ -136,7 +138,6 @@ def reset_chat():
     chat_window.config(state=tk.DISABLED)
 
 def interrupt(event=None):
-
     
     # Stop the text-to-speech playback if pygame mixer is initialized
     if pygame.mixer.get_init():
