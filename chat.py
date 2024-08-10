@@ -1,30 +1,46 @@
 import tkinter as tk
-from tkinter import scrolledtext, simpledialog
+from tkinter import scrolledtext, simpledialog, ttk
 from interpreter import interpreter
 import os
 import speech_recognition as sr
 from openai import OpenAI
 import threading
-from query_vector_database import query_vector_database
+from query_vector_database import query_vector_database, CHROMA_PATH
 import tempfile
 import re
 import pygame
 import time
-from tkinter import ttk 
 
 use_knowledge = True
+# Add this global variable to store the selected knowledge bases
+selected_kbs = []
 
 def configure_interpreter():
     #TODO: system_message use that
     interpreter.system_message = '''
-    You have **full permission** to run code and shell commands on the user's computer. 
-    Use Desktop as the working directory. Save all files in Desktop unless otherwise specified.
-    If the query involves running a command or code, execute it and provide the output. 
-    If additional context is provided, use it to inform your decision-making.
-    You will recieve prompts in the format "Context: {context}\n\nQuery: {query}"
-    Only respond with the answer to the query. Use the context to help you answer the query.
-    If you need to refer to previous messages, use the conversation_history folder
-    If you need to search the internet, use the computer.browser.search(query) function.
+
+    ### Permissions and Environment:
+    - You have **full permission** to run code and shell commands on the user's computer.
+    - Use the Desktop as your default working directory. Save all files on the Desktop unless directed otherwise.
+
+    ### Execution and Response:
+    - When a query involves running a command or code, execute it immediately and provide the output.
+    - If additional context is provided, use it to inform your actions and responses.
+    - Expect prompts in the format:
+
+    Context: {context}
+
+    Query: {query}
+
+    - Use the provided context to shape your response accurately.
+
+    ### Referencing and Searching:
+    - If you need to refer to prior interactions, access the "conversation_history" folder.
+    - For web-based queries, utilize the `computer.browser.search(query)` function as needed.
+
+    ### Communication Style:
+    - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
+    - When delivering responses, avoid reading out code unless explicitly requested by the user. Focus
     '''
 
     providers = ["azure", "openai", "anthropic"]
@@ -92,10 +108,10 @@ def send_message(event=None):
         chat_window.config(state=tk.DISABLED)
         input_box.delete("1.0", tk.END)
         # Query the database
-        if use_knowledge:
-            context_text, sources = query_vector_database(user_input)
+        if use_knowledge and selected_kbs:
+            context_text, sources = query_vector_database(user_input, selected_kbs)
         else:
-            context_text = None
+            context_text, sources = None, []
         
         try:
             response = get_interpreter_response(context_text, user_input)
@@ -105,9 +121,8 @@ def send_message(event=None):
         
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: " + response + "\n")
-        if use_knowledge:
-            if sources:
-                chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
+        if use_knowledge and sources:
+            chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         
@@ -221,10 +236,28 @@ def text_to_speech(text):
     except PermissionError:
         print(f"Could not delete temporary file: {temp_audio_path}")
 
+def toggle_kb(kb_name):
+    if kb_name in selected_kbs:
+        selected_kbs.remove(kb_name)
+    else:
+        selected_kbs.append(kb_name)
+
+def create_kb_checkboxes(parent):
+    kb_frame = ttk.LabelFrame(parent, text="Knowledge Bases")
+    kb_frame.pack(padx=10, pady=10, fill=tk.X)
+
+    # Get the list of knowledge bases (assuming they are subdirectories in the CHROMA_PATH)
+    kb_list = [d for d in os.listdir(CHROMA_PATH) if os.path.isdir(os.path.join(CHROMA_PATH, d))]
+
+    for kb in kb_list:
+        var = tk.BooleanVar()
+        cb = ttk.Checkbutton(kb_frame, text=kb, variable=var, command=lambda k=kb: toggle_kb(k))
+        cb.pack(anchor=tk.W)
+
 def open_settings():
     settings_window = tk.Toplevel(root)
     settings_window.title("Settings")
-    settings_window.geometry("400x300")
+    settings_window.geometry("400x400")  # Increased height to accommodate KB checkboxes
 
     ttk.Label(settings_window, text="Use Knowledge Base:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
     use_knowledge_var = tk.BooleanVar(value=use_knowledge)
@@ -242,33 +275,52 @@ def open_settings():
     loop_var = tk.BooleanVar(value=interpreter.loop)
     ttk.Checkbutton(settings_window, variable=loop_var).grid(row=3, column=1, padx=10, pady=5)
 
-    ttk.Label(settings_window, text="Auto Run:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(settings_window, text="Auto Run:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
     auto_run_var = tk.BooleanVar(value=interpreter.auto_run)
-    ttk.Checkbutton(settings_window, variable=auto_run_var).grid(row=3, column=1, padx=10, pady=5)
+    ttk.Checkbutton(settings_window, variable=auto_run_var).grid(row=4, column=1, padx=10, pady=5)
 
-    ttk.Label(settings_window, text="Temperature:").grid(row=4, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(settings_window, text="Temperature:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
     temperature_var = tk.DoubleVar(value=interpreter.llm.temperature)
-    ttk.Entry(settings_window, textvariable=temperature_var).grid(row=4, column=1, padx=10, pady=5)
+    ttk.Entry(settings_window, textvariable=temperature_var).grid(row=5, column=1, padx=10, pady=5)
 
-    ttk.Label(settings_window, text="Max Response Tokens:").grid(row=5, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(settings_window, text="Max Response Tokens:").grid(row=6, column=0, padx=10, pady=5, sticky="w")
     max_tokens_var = tk.IntVar(value=interpreter.llm.max_tokens)
-    ttk.Entry(settings_window, textvariable=max_tokens_var).grid(row=5, column=1, padx=10, pady=5)
+    ttk.Entry(settings_window, textvariable=max_tokens_var).grid(row=6, column=1, padx=10, pady=5)
 
-    ttk.Label(settings_window, text="Max Context Tokens:").grid(row=6, column=0, padx=10, pady=5, sticky="w")
+    ttk.Label(settings_window, text="Max Context Tokens:").grid(row=7, column=0, padx=10, pady=5, sticky="w")
     context_window_var = tk.IntVar(value=interpreter.llm.context_window)
-    ttk.Entry(settings_window, textvariable=context_window_var).grid(row=6, column=1, padx=10, pady=5)
+    ttk.Entry(settings_window, textvariable=context_window_var).grid(row=7, column=1, padx=10, pady=5)
+
+    # Add Knowledge Base checkboxes
+    kb_frame = ttk.LabelFrame(settings_window, text="Knowledge Bases")
+    kb_frame.grid(row=8, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+
+    # Get the list of knowledge bases (assuming they are subdirectories in the CHROMA_PATH)
+    kb_list = [d for d in os.listdir(CHROMA_PATH) if os.path.isdir(os.path.join(CHROMA_PATH, d))]
+
+    kb_vars = {}
+    for i, kb in enumerate(kb_list):
+        kb_vars[kb] = tk.BooleanVar(value=kb in selected_kbs)
+        cb = ttk.Checkbutton(kb_frame, text=kb, variable=kb_vars[kb])
+        cb.grid(row=i, column=0, sticky="w", padx=5, pady=2)
 
     def save_settings():
-        global use_knowledge
+        global use_knowledge, selected_kbs
         use_knowledge = use_knowledge_var.get()
         interpreter.llm.supports_vision = supports_vision_var.get()
         interpreter.llm.supports_functions = supports_functions_var.get()
+        interpreter.loop = loop_var.get()
         interpreter.auto_run = auto_run_var.get()
         interpreter.llm.temperature = temperature_var.get()
         interpreter.llm.max_tokens = max_tokens_var.get()
+        interpreter.llm.context_window = context_window_var.get()
+        
+        # Update selected knowledge bases
+        selected_kbs = [kb for kb, var in kb_vars.items() if var.get()]
+        
         settings_window.destroy()
 
-    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=6, column=0, columnspan=2, pady=20)
+    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=9, column=0, columnspan=2, pady=20)
 
 # Set up the main application window
 root = tk.Tk()
@@ -282,7 +334,6 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 # Bind Ctrl+C to the interrupt function
 root.bind('<Control-c>', interrupt)
 root.bind('<Return>', send_message)
-root.bind('<Alt_L>', start_recognition_thread)
 
 # Create a scrolled text widget for the chat window
 chat_window = scrolledtext.ScrolledText(root, wrap=tk.WORD, state=tk.DISABLED)
