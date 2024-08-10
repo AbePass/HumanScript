@@ -15,6 +15,11 @@ use_knowledge = True
 # Add this global variable to store the selected knowledge bases
 selected_kbs = []
 
+# Add these global variables at the top of your file
+wake_word = "hey computer"
+is_listening = False
+listen_thread = None
+
 def configure_interpreter():
     #TODO: system_message use that
     interpreter.system_message = '''
@@ -41,6 +46,7 @@ def configure_interpreter():
     ### Communication Style:
     - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
     - When delivering responses, avoid reading out code unless explicitly requested by the user. Focus
+
     '''
 
     providers = ["azure", "openai", "anthropic"]
@@ -165,15 +171,34 @@ def interrupt(event=None):
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
 
-def recognize_speech():
-        # Stop the text-to-speech playback if pygame mixer is initialized
+def continuous_listen():
+    global is_listening
+    recognizer = sr.Recognizer()
+    while is_listening:
+        try:
+            with sr.Microphone() as source:
+                print("Listening for wake word...")
+                audio = recognizer.listen(source, phrase_time_limit=3)
+            
+            text = recognizer.recognize_google(audio).lower()
+            print(f"Heard: {text}")
+            if wake_word in text:
+                print("Wake word detected!")
+                recognize_speech()
+        except sr.UnknownValueError:
+            pass
+        except sr.RequestError as e:
+            print(f"Could not request results from Google Speech Recognition service; {e}")
+
+def recognize_speech(event=None):
+    # Stop the text-to-speech playback if pygame mixer is initialized
     if pygame.mixer.get_init():
         pygame.mixer.music.stop()
-        
+    
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "System: Listening...\n")
+        chat_window.insert(tk.END, "System: Listening for command...\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         audio = recognizer.listen(source)
@@ -204,37 +229,24 @@ def recognize_speech():
         if 'temp_audio_path' in locals():
             os.unlink(temp_audio_path)
 
-def start_recognition_thread():
-    threading.Thread(target=recognize_speech).start()
-
-def text_to_speech(text):
-    pygame.mixer.init()
-    response = client.audio.speech.create(
-        model="tts-1",
-        voice="alloy",
-        input=text
-    )
-    
-    # Save the audio content to a temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
-        temp_audio.write(response.content)
-        temp_audio_path = temp_audio.name
-    
-    # Play the audio file
-    pygame.mixer.music.load(temp_audio_path)
-    pygame.mixer.music.play()
-    while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(10)
-    
-    # Wait a bit before trying to delete the file
-    pygame.mixer.music.unload()
-    time.sleep(0.1)
-    
-    # Try to remove the temporary file, but don't raise an error if it fails
-    try:
-        os.unlink(temp_audio_path)
-    except PermissionError:
-        print(f"Could not delete temporary file: {temp_audio_path}")
+def toggle_listening():
+    global is_listening, listen_thread
+    if is_listening:
+        is_listening = False
+        listen_button.config(text="Start Listening")
+        chat_window.config(state=tk.NORMAL)
+        chat_window.insert(tk.END, "System: Stopped listening for wake word.\n")
+        chat_window.config(state=tk.DISABLED)
+        chat_window.yview(tk.END)
+    else:
+        is_listening = True
+        listen_button.config(text="Stop Listening")
+        chat_window.config(state=tk.NORMAL)
+        chat_window.insert(tk.END, "System: Started listening for wake word.\n")
+        chat_window.config(state=tk.DISABLED)
+        chat_window.yview(tk.END)
+        listen_thread = threading.Thread(target=continuous_listen, daemon=True)
+        listen_thread.start()
 
 def toggle_kb(kb_name):
     if kb_name in selected_kbs:
@@ -322,6 +334,35 @@ def open_settings():
 
     ttk.Button(settings_window, text="Save", command=save_settings).grid(row=9, column=0, columnspan=2, pady=20)
 
+def text_to_speech(text):
+    pygame.mixer.init()
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice="alloy",
+        input=text
+    )
+    
+    # Save the audio content to a temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
+        temp_audio.write(response.content)
+        temp_audio_path = temp_audio.name
+    
+    # Play the audio file
+    pygame.mixer.music.load(temp_audio_path)
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(10)
+    
+    # Wait a bit before trying to delete the file
+    pygame.mixer.music.unload()
+    time.sleep(0.1)
+    
+    # Try to remove the temporary file, but don't raise an error if it fails
+    try:
+        os.unlink(temp_audio_path)
+    except PermissionError:
+        print(f"Could not delete temporary file: {temp_audio_path}")
+
 # Set up the main application window
 root = tk.Tk()
 root.title("Chat UI")
@@ -351,10 +392,6 @@ button_frame.pack(padx=10, pady=10, fill=tk.X)
 send_button = tk.Button(button_frame, text="Send", command=send_message)
 send_button.pack(side=tk.LEFT, padx=5)
 
-# Create a speech-to-text button
-speech_button = tk.Button(button_frame, text="Speak", command=start_recognition_thread)
-speech_button.pack(side=tk.LEFT, padx=5)
-
 # Create a settings button
 settings_button = tk.Button(button_frame, text="Settings", command=open_settings)
 settings_button.pack(side=tk.LEFT, padx=5)
@@ -371,6 +408,14 @@ interrupt_button.pack(side=tk.LEFT, padx=5)
 tts_var = tk.BooleanVar()
 tts_checkbox = tk.Checkbutton(root, text="Enable Text-to-Speech", variable=tts_var)
 tts_checkbox.pack(padx=10, pady=10)
+
+# Create a toggle listening button
+listen_button = tk.Button(button_frame, text="Start Listening", command=toggle_listening)
+listen_button.pack(side=tk.LEFT, padx=5)
+
+# Add a Speak button
+speak_button = tk.Button(button_frame, text="Speak", command=recognize_speech)
+speak_button.pack(side=tk.LEFT, padx=5)
 
 # Run the application
 root.mainloop()
