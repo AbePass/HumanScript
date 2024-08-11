@@ -11,44 +11,27 @@ import re
 import pygame
 import time
 import numpy as np
+from config import *  # Import all settings from config.py
+import json
 
-use_knowledge = True
-# Add this global variable to store the selected knowledge bases
-selected_kbs = []
-
-# Add these global variables at the top of your file
-wake_word = "hey computer"
+# Replace the global variables with imports from config
+use_knowledge = USE_KNOWLEDGE
+selected_kbs = DEFAULT_SELECTED_KBS.copy()
+wake_word = WAKE_WORD
 is_listening = False
 listen_thread = None
 
 def configure_interpreter():
-    #TODO: system_message use that
-    interpreter.system_message = '''
-
-    ### Permissions and Environment:
-    - You have **full permission** to run code and shell commands on the user's computer.
-    - Use the Desktop as your default working directory. Save all files on the Desktop unless directed otherwise.
-
-    ### Execution and Response:
-    - When a query involves running a command or code, execute it immediately and provide the output.
-    - If additional context is provided, use it to inform your actions and responses.
-    - Expect prompts in the format:
-
-    Context: {context}
-
-    Query: {query}
-
-    - Use the provided context to shape your response accurately.
-
-    ### Referencing and Searching:
-    - If you need to refer to prior interactions, access the "conversation_history" folder.
-    - For web-based queries, utilize the `computer.browser.search(query)` function as needed.
-
-    ### Communication Style:
-    - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
-    - Do not repeat yourself in your responses.
-
-    '''
+    interpreter.system_message = SYSTEM_MESSAGE
+    interpreter.llm.supports_vision = INTERPRETER_SETTINGS["supports_vision"]
+    interpreter.llm.supports_functions = INTERPRETER_SETTINGS["supports_functions"]
+    interpreter.auto_run = INTERPRETER_SETTINGS["auto_run"]
+    interpreter.loop = INTERPRETER_SETTINGS["loop"]
+    interpreter.llm.temperature = INTERPRETER_SETTINGS["temperature"]
+    interpreter.llm.max_tokens = INTERPRETER_SETTINGS["max_tokens"]
+    interpreter.llm.context_window = INTERPRETER_SETTINGS["context_window"]
+    interpreter.conversation_history_path = INTERPRETER_SETTINGS["conversation_history_path"]
+    interpreter.computer.import_computer_api = INTERPRETER_SETTINGS["import_computer_api"]
 
     providers = ["azure", "openai", "anthropic"]
     
@@ -75,37 +58,60 @@ def configure_interpreter():
     root.wait_window(provider_window)
 
 def configure_provider(provider):
-    os.environ["OPENAI_API_KEY"] = simpledialog.askstring("Input", "Enter OpenAI API Key: (needed for lanchain rag)")
+    config_file = 'provider_config.json'
+    
+    # Load existing configuration if available
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+    else:
+        config = {}
 
-    interpreter.llm.supports_vision = True
-    interpreter.llm.supports_functions = True
-    interpreter.auto_run = True
-    interpreter.loop = True
-    interpreter.llm.temperature = 0.3
-    interpreter.llm.max_tokens = 4096
-    interpreter.llm.context_window = 10000
-    interpreter.conversation_history_path = "conversation_history"
-    interpreter.computer.import_computer_api = True
+    # Function to get or prompt for a value
+    def get_or_prompt(key, prompt):
+        if key in config:
+            return config[key]
+        value = simpledialog.askstring("Input", prompt)
+        config[key] = value
+        return value
+
+    # Common for all providers
+    os.environ["OPENAI_API_KEY"] = get_or_prompt("OPENAI_API_KEY", "Enter OpenAI API Key: (needed for lanchain rag)")
 
     if provider.lower() == "azure":
-        os.environ["AZURE_API_KEY"] = simpledialog.askstring("Input", "Enter Azure API Key:")
-        os.environ["AZURE_API_BASE"] = simpledialog.askstring("Input", "Enter Azure API Base:")
-        os.environ["AZURE_API_VERSION"] = simpledialog.askstring("Input", "Enter Azure API Version:")
-        model = simpledialog.askstring("Input", "Enter Azure Model:")
-        interpreter.llm.provider = "azure"  # Set the provider
+        os.environ["AZURE_API_KEY"] = get_or_prompt("AZURE_API_KEY", "Enter Azure API Key:")
+        os.environ["AZURE_API_BASE"] = get_or_prompt("AZURE_API_BASE", "Enter Azure API Base:")
+        os.environ["AZURE_API_VERSION"] = get_or_prompt("AZURE_API_VERSION", "Enter Azure API Version:")
+        model = get_or_prompt("AZURE_MODEL", "Enter Azure Model:")
+        interpreter.llm.provider = "azure"
         interpreter.llm.api_key = os.environ["AZURE_API_KEY"]
         interpreter.llm.api_base = os.environ["AZURE_API_BASE"]
         interpreter.llm.api_version = os.environ["AZURE_API_VERSION"]
-        interpreter.llm.model = f"azure/{model}"  # Ensure the model is prefixed with 'azure/'
+        interpreter.llm.model = f"azure/{model}"
     elif provider.lower() == "openai":
-        model = simpledialog.askstring("Input", "Enter OpenAI Model:")
+        model = get_or_prompt("OPENAI_MODEL", "Enter OpenAI Model:")
         interpreter.llm.api_key = os.environ["OPENAI_API_KEY"]
         interpreter.llm.model = model
     elif provider.lower() == "anthropic":
-        os.environ["ANTHROPIC_API_KEY"] = simpledialog.askstring("Input", "Enter Anthropic API Key:")
-        model = simpledialog.askstring("Input", "Enter Anthropic Model:")
+        os.environ["ANTHROPIC_API_KEY"] = get_or_prompt("ANTHROPIC_API_KEY", "Enter Anthropic API Key:")
+        model = get_or_prompt("ANTHROPIC_MODEL", "Enter Anthropic Model:")
         interpreter.llm.api_key = os.environ["ANTHROPIC_API_KEY"]
         interpreter.llm.model = f"anthropic/{model}"
+
+    # Save the configuration
+    with open(config_file, 'w') as f:
+        json.dump(config, f)
+
+    # Set the provider in the configuration
+    config['PROVIDER'] = provider.lower()
+
+def generate_beep():
+    pygame.mixer.init(frequency=44100, size=-16, channels=2)
+    t = np.linspace(0, BEEP_DURATION, int(44100 * BEEP_DURATION), False)
+    beep = np.sin(2 * np.pi * BEEP_FREQUENCY * t)
+    beep = (beep * 32767).astype(np.int16)
+    stereo_beep = np.column_stack((beep, beep))  # Create stereo audio
+    return pygame.sndarray.make_sound(stereo_beep)
 
 def send_message(event=None):
     user_input = input_box.get("1.0", tk.END).strip()
@@ -171,17 +177,6 @@ def interrupt(event=None):
     chat_window.config(state=tk.NORMAL)
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
-
-def generate_beep():
-    pygame.mixer.init(frequency=44100, size=-16, channels=2)
-    duration = 0.2  # Duration of the beep in seconds
-    frequency = 440  # Frequency of the beep in Hz (A4 note)
-    sample_rate = 44100
-    t = np.linspace(0, duration, int(sample_rate * duration), False)
-    beep = np.sin(2 * np.pi * frequency * t)
-    beep = (beep * 32767).astype(np.int16)
-    stereo_beep = np.column_stack((beep, beep))  # Create stereo audio
-    return pygame.sndarray.make_sound(stereo_beep)
 
 def continuous_listen():
     global is_listening
@@ -351,8 +346,8 @@ def open_settings():
 def text_to_speech(text):
     pygame.mixer.init()
     response = client.audio.speech.create(
-        model="tts-1",
-        voice="alloy",
+        model=TTS_SETTINGS["model"],
+        voice=TTS_SETTINGS["voice"],
         input=text
     )
     

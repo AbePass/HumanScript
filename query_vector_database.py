@@ -4,8 +4,7 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor
 from langchain_openai import ChatOpenAI
 import os
-
-CHROMA_PATH = "db"
+from config import CHROMA_PATH
 
 def query_vector_database(query_text, selected_kbs):
     openai_key = os.environ["OPENAI_API_KEY"]

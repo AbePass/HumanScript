@@ -6,12 +6,11 @@ from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 import os
 import shutil
+from config import CHROMA_PATH, KNOWLEDGE_BASE_PATH
 
 # Load environment variables
 load_dotenv()
 
-CHROMA_PATH = "db"
-KNOWLEDGE_BASE_PATH = "knowledge_bases"
 
 def load_docs_folder(knowledge_base):
     kb_path = os.path.join(KNOWLEDGE_BASE_PATH, knowledge_base)
