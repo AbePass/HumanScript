@@ -1,26 +1,31 @@
-## Raspberry Pi Based Dev Kit Powered by Open Interpreter
+## Platform Agnostic Assistant Framework by Abraham Passmore at Human Devices
 
-This project utilizes a Raspberry Pi based development kit that is powered by Open Interpreter. The development kit provides a versatile and powerful platform for various applications, including but not limited to:
+This repository by Abraham Passmore at Human Devices (humandevices.co) presents a platform agnostic assistant framework designed to run on a Raspberry Pi but can also be run on any platform as a desktop assistant. The framework provides tools like customizable knowledge bases, wakeword recognition for handsfree use, and chat memory, offering a versatile and powerful platform for various uses, including but not limited to:
 
 - Home automation
 - IoT projects
 - Educational tools
 - Prototyping and development
+- Accessibility
 
 ### Features
 
 - **Open Interpreter Integration**: Seamlessly integrates with Open Interpreter to provide advanced functionalities and ease of use.
+- **Customizable Knowledge Bases**: Allows you to create and manage knowledge bases tailored to your specific needs.
+- **Wakeword Recognition**: Enables handsfree use through wakeword detection.
+- **Chat Memory**: Remembers previous interactions to provide a more coherent and context-aware assistant experience.
 - **Versatile Applications**: Suitable for a wide range of projects and applications.
 - **User-Friendly**: Designed to be easy to set up and use, even for beginners.
 
 ### Getting Started
 
-To get started with the Raspberry Pi based dev kit powered by Open Interpreter, follow these steps:
+To get started with this assistant framework, follow these steps:
 
-1. **Set Up Your Raspberry Pi**: Follow the official Raspberry Pi setup guide to get your device up and running.
-2. **Install Open Interpreter**: Use our installers to set up our version of Open Interpreter.
-3. **Connect Your Devices**: Connect any additional devices or sensors you plan to use with your development kit.
-4. **Start Developing**: Begin creating your projects using the powerful combination of Raspberry Pi and Open Interpreter.
+1. **Prerequisites**: Ensure you have Python, Git, and C++ development tools installed on your system.
+2. **Clone the Repository**: Clone this repository to your local machine using `git clone https://github.com/AbePass/OpenPI.git`.
+3. **Run the Installer**: Depending on your operating system, run either `.\installers\oi-windows-installer` or `bash installers\oi-linux-installer` to set up the virtual environment (make sure to activate the environment after the installer runs if it doesn't do it automatically).
+4. **Configure your assistant**: Edit the settings and knowledge bases to set up your assistant.
+5. **Run your assistant**: Run the assistant either on your desktop or on your Raspberry Pi using `python chat.py`.
 
 For detailed instructions and tutorials, please refer to the documentation provided in this repository.
 
