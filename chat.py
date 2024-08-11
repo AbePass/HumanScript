@@ -10,6 +10,7 @@ import tempfile
 import re
 import pygame
 import time
+import numpy as np
 
 use_knowledge = True
 # Add this global variable to store the selected knowledge bases
@@ -45,7 +46,7 @@ def configure_interpreter():
 
     ### Communication Style:
     - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
-    - When delivering responses, avoid reading out code unless explicitly requested by the user. Focus
+    - Do not repeat yourself in your responses.
 
     '''
 
@@ -135,8 +136,8 @@ def send_message(event=None):
         if tts_var.get():
             text_to_speech(response)
 
-def sanitize_filename(filename):
-    """Sanitize the filename to remove invalid characters."""
+def sanitize(filename):
+    """Sanitize to remove invalid characters."""
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
 def get_interpreter_response(context, query):
@@ -147,7 +148,7 @@ def get_interpreter_response(context, query):
         # Combine context and query in a more clear way
         prompt = f"Context: {context}\n\nQuery: {query}"
     
-    sanitized_prompt = sanitize_filename(prompt)
+    sanitized_prompt = sanitize(prompt)
     messages = interpreter.chat(sanitized_prompt, display=False, stream=False)
     response = messages[-1]['content'] if messages else "No response"
     return response
@@ -171,9 +172,21 @@ def interrupt(event=None):
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
 
+def generate_beep():
+    pygame.mixer.init(frequency=44100, size=-16, channels=2)
+    duration = 0.2  # Duration of the beep in seconds
+    frequency = 440  # Frequency of the beep in Hz (A4 note)
+    sample_rate = 44100
+    t = np.linspace(0, duration, int(sample_rate * duration), False)
+    beep = np.sin(2 * np.pi * frequency * t)
+    beep = (beep * 32767).astype(np.int16)
+    stereo_beep = np.column_stack((beep, beep))  # Create stereo audio
+    return pygame.sndarray.make_sound(stereo_beep)
+
 def continuous_listen():
     global is_listening
     recognizer = sr.Recognizer()
+    beep = generate_beep()
     while is_listening:
         try:
             with sr.Microphone() as source:
@@ -184,6 +197,7 @@ def continuous_listen():
             print(f"Heard: {text}")
             if wake_word in text:
                 print("Wake word detected!")
+                beep.play()  # Play the beep sound
                 recognize_speech()
         except sr.UnknownValueError:
             pass
