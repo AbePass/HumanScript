@@ -6,14 +6,14 @@ from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 import os
 import shutil
-from config import CHROMA_PATH, KNOWLEDGE_BASE_PATH
+from config import CHROMA_PATH, KB_PATH
+import time
 
 # Load environment variables
 load_dotenv()
 
-
 def load_docs_folder(knowledge_base):
-    kb_path = os.path.join(KNOWLEDGE_BASE_PATH, knowledge_base)
+    kb_path = os.path.join(KB_PATH, knowledge_base)
     docs_path = os.path.join(kb_path, "docs")
     urls_file = os.path.join(kb_path, "urls.txt")
 
@@ -69,23 +69,36 @@ def split_text(documents: list[Document]):
 
 def save_to_chroma(chunks: list[Document], knowledge_base: str):
     db_path = os.path.join(CHROMA_PATH, knowledge_base)
-    # Remove existing DB files
-    if os.path.exists(db_path):
-        shutil.rmtree(db_path)
-    
-    # Create a new DB from the documents
     embedding_function = OpenAIEmbeddings()
-    db = Chroma.from_documents(
-        chunks, embedding_function, persist_directory=db_path
-    )
-    db.persist()
-    print(f"Saved {len(chunks)} chunks to {db_path}.")
-
-if __name__ == "__main__":
-    # Get all subdirectories in the KNOWLEDGE_BASE_PATH
-    knowledge_bases = [d for d in os.listdir(KNOWLEDGE_BASE_PATH) 
-                       if os.path.isdir(os.path.join(KNOWLEDGE_BASE_PATH, d))]
     
-    for kb in knowledge_bases:
-        print(f"Processing knowledge base: {kb}")
-        load_docs_folder(kb)
+    # Check if the database already exists
+    if os.path.exists(db_path):
+        # Load the existing database
+        db = Chroma(persist_directory=db_path, embedding_function=embedding_function)
+        
+        # Add new documents to the existing database
+        db.add_documents(chunks)
+    else:
+        # Create a new database if it doesn't exist
+        db = Chroma.from_documents(chunks, embedding_function, persist_directory=db_path)
+    
+    # Persist the changes
+    db.persist()
+    print(f"Updated database with {len(chunks)} chunks in {db_path}.")
+
+def build_vector_database(knowledge_base=None):
+    if knowledge_base:
+        # Update only the specified knowledge base
+        if os.path.isdir(os.path.join(KB_PATH, knowledge_base)):
+            print(f"Processing knowledge base: {knowledge_base}")
+            load_docs_folder(knowledge_base)
+        else:
+            print(f"Knowledge base '{knowledge_base}' not found.")
+    else:
+        # Update all knowledge bases
+        knowledge_bases = [d for d in os.listdir(KB_PATH) 
+                           if os.path.isdir(os.path.join(KB_PATH, d))]
+        
+        for kb in knowledge_bases:
+            print(f"Processing knowledge base: {kb}")
+            load_docs_folder(kb)

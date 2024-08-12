@@ -52,6 +52,7 @@ TTS_SETTINGS = {
 # Knowledge base settings
 USE_KNOWLEDGE = True
 CHROMA_PATH = "db"
+KB_PATH = "knowledge_bases"
 
 # Default selected knowledge bases
 DEFAULT_SELECTED_KBS = []

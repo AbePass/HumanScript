@@ -1,11 +1,12 @@
 import tkinter as tk
-from tkinter import scrolledtext, simpledialog, ttk
+from tkinter import scrolledtext, simpledialog, ttk, filedialog, messagebox
 from interpreter import interpreter
 import os
 import speech_recognition as sr
 from openai import OpenAI
 import threading
-from query_vector_database import query_vector_database, CHROMA_PATH
+from query_vector_database import query_vector_database
+from build_vector_database import build_vector_database
 import tempfile
 import re
 import pygame
@@ -13,6 +14,7 @@ import time
 import numpy as np
 from config import *  # Import all settings from config.py
 import json
+import shutil
 
 # Replace the global variables with imports from config
 use_knowledge = USE_KNOWLEDGE
@@ -372,6 +374,79 @@ def text_to_speech(text):
     except PermissionError:
         print(f"Could not delete temporary file: {temp_audio_path}")
 
+def add_to_knowledge_base():
+    # Get list of existing knowledge bases
+    kb_list = [d for d in os.listdir(KB_PATH) if os.path.isdir(os.path.join(KB_PATH, d))]
+    
+    # Create a new top-level window for KB selection or creation
+    kb_window = tk.Toplevel(root)
+    kb_window.title("Add to Knowledge Base")
+    kb_window.geometry("300x150")
+    
+    def select_existing_kb():
+        kb_name = kb_var.get()
+        kb_window.destroy()
+        add_content_to_kb(kb_name)
+    
+    def create_new_kb():
+        new_kb_name = simpledialog.askstring("New Knowledge Base", "Enter name for new knowledge base:")
+        if new_kb_name:
+            new_kb_path = os.path.join(KB_PATH, new_kb_name)
+            os.makedirs(os.path.join(new_kb_path, "docs"), exist_ok=True)
+            with open(os.path.join(new_kb_path, "urls.txt"), 'w') as f:
+                pass  # Create empty urls.txt file
+            kb_window.destroy()
+            add_content_to_kb(new_kb_name)
+    
+    kb_var = tk.StringVar()
+    kb_dropdown = ttk.Combobox(kb_window, textvariable=kb_var, values=kb_list, state="readonly")
+    kb_dropdown.set("Select knowledge base")
+    kb_dropdown.pack(pady=10)
+    
+    select_button = tk.Button(kb_window, text="Select Existing KB", command=select_existing_kb)
+    select_button.pack(pady=5)
+    
+    create_button = tk.Button(kb_window, text="Create New KB", command=create_new_kb)
+    create_button.pack(pady=5)
+    
+    kb_window.transient(root)
+    kb_window.grab_set()
+    root.wait_window(kb_window)
+
+def add_content_to_kb(kb_name):
+    content_window = tk.Toplevel(root)
+    content_window.title(f"Add to {kb_name}")
+    content_window.geometry("300x150")
+    
+    def add_file():
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            dest_path = os.path.join(KB_PATH, kb_name, "docs", os.path.basename(file_path))
+            shutil.copy2(file_path, dest_path)
+            update_kb()
+    
+    def add_url():
+        url = simpledialog.askstring("Add URL", "Enter URL to add:")
+        if url:
+            with open(os.path.join(KB_PATH, kb_name, "urls.txt"), 'a') as f:
+                f.write(url + '\n')
+            update_kb()
+    
+    def update_kb():
+        content_window.destroy()
+        build_vector_database(kb_name)  # Pass the specific knowledge base name
+        messagebox.showinfo("Success", f"Knowledge base '{kb_name}' updated successfully!")
+    
+    file_button = tk.Button(content_window, text="Add File", command=add_file)
+    file_button.pack(pady=10)
+    
+    url_button = tk.Button(content_window, text="Add URL", command=add_url)
+    url_button.pack(pady=10)
+    
+    content_window.transient(root)
+    content_window.grab_set()
+    root.wait_window(content_window)
+
 # Set up the main application window
 root = tk.Tk()
 root.title("Chat UI")
@@ -425,6 +500,10 @@ listen_button.pack(side=tk.LEFT, padx=5)
 # Add a Speak button
 speak_button = tk.Button(button_frame, text="Speak", command=recognize_speech)
 speak_button.pack(side=tk.LEFT, padx=5)
+
+# Add a new button to the button frame
+add_kb_button = tk.Button(button_frame, text="Add to KB", command=add_to_knowledge_base)
+add_kb_button.pack(side=tk.LEFT, padx=5)
 
 # Run the application
 root.mainloop()
