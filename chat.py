@@ -102,9 +102,6 @@ def send_message(event=None):
         
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: " + response + "\n")
-        if use_knowledge:
-            if sources:
-                chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         
