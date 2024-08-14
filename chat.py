@@ -15,6 +15,9 @@ import numpy as np
 from config import *  # Import all settings from config.py
 import json
 import shutil
+import base64
+from PIL import Image
+import commands
 
 # Replace the global variables with imports from config
 use_knowledge = USE_KNOWLEDGE
@@ -148,16 +151,39 @@ def sanitize(filename):
     """Sanitize to remove invalid characters."""
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
+def encode_image_to_base64(file_path):
+    with open(file_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+def is_image_file(file_path):
+    try:
+        Image.open(file_path)
+        return True
+    except IOError:
+        return False
+
 def get_interpreter_response(context, query):
+    # Check if the query is a hard-coded command
+    command_response = commands.execute_command(query)
+    if command_response:
+        if isinstance(command_response, dict):
+            messages = interpreter.chat(command_response, display=False, stream=False)
+            response = messages[-1]['content'] if messages else "No response"
+        else:
+            response = command_response
+        return response
+
     # If context is None or empty, just use the query
     if not context:
         prompt = query
     else:
         # Combine context and query in a more clear way
         prompt = f"Context: {context}\n\nQuery: {query}"
-    
-    sanitized_prompt = sanitize(prompt)
-    messages = interpreter.chat(sanitized_prompt, display=False, stream=False)
+        
+        sanitized_prompt = sanitize(prompt)
+        message = sanitized_prompt
+
+    messages = interpreter.chat(message, display=False, stream=False)
     response = messages[-1]['content'] if messages else "No response"
     return response
 
@@ -207,11 +233,11 @@ def recognize_speech(event=None):
         pygame.mixer.music.stop()
     
     recognizer = sr.Recognizer()
+    chat_window.config(state=tk.NORMAL)
+    chat_window.insert(tk.END, "System: Listening for command...\n")
+    chat_window.config(state=tk.DISABLED)
+    chat_window.yview(tk.END)
     with sr.Microphone() as source:
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "System: Listening for command...\n")
-        chat_window.config(state=tk.DISABLED)
-        chat_window.yview(tk.END)
         audio = recognizer.listen(source)
     
     try:
