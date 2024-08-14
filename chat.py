@@ -151,29 +151,18 @@ def sanitize(filename):
     """Sanitize to remove invalid characters."""
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
-def encode_image_to_base64(file_path):
-    with open(file_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
-
-def is_image_file(file_path):
-    try:
-        Image.open(file_path)
-        return True
-    except IOError:
-        return False
 
 def get_interpreter_response(context, query):
     # Check if the query is a hard-coded command
     command_response = commands.execute_command(query)
-    if command_response:
-        if isinstance(command_response, dict):
-            messages = interpreter.chat(command_response, display=False, stream=False)
-            response = messages[-1]['content'] if messages else "No response"
-        else:
-            response = command_response
-        return response
-
+    
+    if command_response is None:
+        # No command matched, treat as a regular query
+        message = query
+    else:
+        message = command_response
     # If context is None or empty, just use the query
+
     if not context:
         prompt = query
     else:
