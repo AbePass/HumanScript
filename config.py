@@ -42,17 +42,6 @@ Query: {query}
 - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
 - Do not repeat yourself in your responses.
 
-### Image Processing:
-- If the user asks about an image, encode it to base64 and add it to the message in the format:
-
-```
-{
-    "role": "user",
-    "type": "image",
-    "format": "base64",
-    "content": "base64_encoded_image"
-}
-```
 
 '''
 

@@ -7,10 +7,10 @@ from interpreter.terminal_interface.utils.find_image_path import find_image_path
 
 def execute_command(query):
     commands = [
-        #if you say what's on my screen, show my screen, capture my screen, or screenshot, it will take a screenshot
+        # #if you say what's on my screen, show my screen, capture my screen, or screenshot, it will take a screenshot
         (r'\b(?:what(?:\'s|\s+is)?|show)\s+(?:on|in)\s+my\s+screen\b', take_screenshot_command), 
-        # if you say a phrase that includes a file path, it will detect the file path
-        (r'\b(?:[a-zA-Z]:\\|/)?(?:[\w-]+\\|/)*[\w-]+\.\w+\b', detect_filepath_command),
+        # # if you say a phrase that includes a file path, it will detect the file path
+        # (r'\b(?:[a-zA-Z]:\\|/)?(?:[\w-]+\\|/)*[\w-]+\.\w+\b', detect_filepath_command),
     ]
     
     # Normalize the query: convert to lowercase

@@ -15,9 +15,8 @@ import numpy as np
 from config import *  # Import all settings from config.py
 import json
 import shutil
-import base64
-from PIL import Image
 import commands
+
 
 # Replace the global variables with imports from config
 use_knowledge = USE_KNOWLEDGE
@@ -25,6 +24,7 @@ selected_kbs = DEFAULT_SELECTED_KBS.copy()
 wake_word = WAKE_WORD
 is_listening = False
 listen_thread = None
+is_voice_mode = False
 
 def configure_interpreter():
     interpreter.system_message = SYSTEM_MESSAGE
@@ -40,7 +40,7 @@ def configure_interpreter():
 
     providers = ["azure", "openai", "anthropic"]
     
-    # Create a new top-level window for provider selection
+    # Create a new top-level window for provider selectio
     provider_window = tk.Toplevel(root)
     provider_window.title("Select Provider")
     provider_window.geometry("300x100")
@@ -121,31 +121,77 @@ def generate_beep():
 def send_message(event=None):
     user_input = input_box.get("1.0", tk.END).strip()
     if user_input:
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "You: " + user_input + "\n")
-        chat_window.config(state=tk.DISABLED)
-        input_box.delete("1.0", tk.END)
-        # Query the database
-        if use_knowledge and selected_kbs:
-            context_text, sources = query_vector_database(user_input, selected_kbs)
-        else:
-            context_text, sources = None, []
+        process_input(user_input)
+
+def recognize_speech(event=None):
+    # Stop the text-to-speech playback if pygame mixer is initialized
+    if pygame.mixer.get_init():
+        pygame.mixer.music.stop()
+    
+    recognizer = sr.Recognizer()
+    chat_window.config(state=tk.NORMAL)
+    chat_window.insert(tk.END, "System: Listening for command...\n")
+    chat_window.config(state=tk.DISABLED)
+    chat_window.yview(tk.END)
+    with sr.Microphone() as source:
+        audio = recognizer.listen(source)
+    
+    try:
+        # Save the audio to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+            temp_audio.write(audio.get_wav_data())
+            temp_audio_path = temp_audio.name
         
-        try:
-            response = get_interpreter_response(context_text, user_input)
-        except Exception as e:
-            response = f"There was an error processing your request: {e}"
-            print(f"Error: {e}")  # Print the exception details
+        # Transcribe using Whisper
+        with open(temp_audio_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1", 
+                file=audio_file
+            )
         
+        user_input = transcript.text
+        process_input(user_input)
+        
+    except Exception as e:
         chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "Bot: " + response + "\n")
-        if use_knowledge and sources:
-            chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
+        chat_window.insert(tk.END, f"System: Error in speech recognition: {str(e)}\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
-        
-        if tts_var.get():
-            text_to_speech(response)
+    finally:
+        # Clean up the temporary file
+        if 'temp_audio_path' in locals():
+            os.unlink(temp_audio_path)
+
+def process_input(user_input):
+    chat_window.config(state=tk.NORMAL)
+    chat_window.insert(tk.END, "You: " + user_input + "\n")
+    chat_window.config(state=tk.DISABLED)
+    chat_window.yview(tk.END)
+    
+    # Update the UI immediately
+    root.update_idletasks()
+    
+    # Query the database
+    if use_knowledge and selected_kbs:
+        context_text, sources = query_vector_database(user_input, selected_kbs)
+    else:
+        context_text, sources = None, []
+    
+    try:
+        response = get_interpreter_response(context_text, user_input)
+    except Exception as e:
+        response = f"There was an error processing your request: {e}"
+        print(f"Error: {e}")  # Print the exception details
+    
+    chat_window.config(state=tk.NORMAL)
+    chat_window.insert(tk.END, "Bot: " + response + "\n")
+    if use_knowledge and sources:
+        chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
+    chat_window.config(state=tk.DISABLED)
+    chat_window.yview(tk.END)
+    
+    if is_voice_mode:
+        text_to_speech(response)
 
 def sanitize(filename):
     """Sanitize to remove invalid characters."""
@@ -186,17 +232,40 @@ def reset_chat():
     chat_window.config(state=tk.DISABLED)
 
 def interrupt(event=None):
-    
     # Stop the text-to-speech playback if pygame mixer is initialized
     if pygame.mixer.get_init():
         pygame.mixer.music.stop()
     
     chat_window.config(state=tk.NORMAL)
+    chat_window.insert(tk.END, "System: Interrupted\n")
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
 
+def toggle_mode():
+    global is_voice_mode, listen_thread
+    is_voice_mode = not is_voice_mode
+    if is_voice_mode:
+        mode_button.config(text="Switch to Text Mode")
+        input_box.pack_forget()
+        send_button.pack_forget()
+        speak_button.pack(side=tk.LEFT, padx=5)
+        # Start continuous listening
+        listen_thread = threading.Thread(target=continuous_listen, daemon=True)
+        listen_thread.start()
+    else:
+        mode_button.config(text="Switch to Voice Mode")
+        speak_button.pack_forget()
+        input_box.pack(padx=10, pady=10, fill=tk.X, expand=False)
+        send_button.pack(side=tk.LEFT, padx=5)
+        # Stop continuous listening
+        if listen_thread:
+            global is_listening
+            is_listening = False
+            listen_thread.join()
+
 def continuous_listen():
     global is_listening
+    is_listening = True
     recognizer = sr.Recognizer()
     beep = generate_beep()
     while is_listening:
@@ -215,64 +284,6 @@ def continuous_listen():
             pass
         except sr.RequestError as e:
             print(f"Could not request results from Google Speech Recognition service; {e}")
-
-def recognize_speech(event=None):
-    # Stop the text-to-speech playback if pygame mixer is initialized
-    if pygame.mixer.get_init():
-        pygame.mixer.music.stop()
-    
-    recognizer = sr.Recognizer()
-    chat_window.config(state=tk.NORMAL)
-    chat_window.insert(tk.END, "System: Listening for command...\n")
-    chat_window.config(state=tk.DISABLED)
-    chat_window.yview(tk.END)
-    with sr.Microphone() as source:
-        audio = recognizer.listen(source)
-    
-    try:
-        # Save the audio to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-            temp_audio.write(audio.get_wav_data())
-            temp_audio_path = temp_audio.name
-        
-        # Transcribe using Whisper
-        with open(temp_audio_path, "rb") as audio_file:
-            transcript = client.audio.transcriptions.create(
-                model="whisper-1", 
-                file=audio_file
-            )
-        
-        user_input = transcript.text
-        input_box.insert(tk.END, user_input)
-        send_message()
-    except Exception as e:
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, f"System: Error in speech recognition: {str(e)}\n")
-        chat_window.config(state=tk.DISABLED)
-        chat_window.yview(tk.END)
-    finally:
-        # Clean up the temporary file
-        if 'temp_audio_path' in locals():
-            os.unlink(temp_audio_path)
-
-def toggle_listening():
-    global is_listening, listen_thread
-    if is_listening:
-        is_listening = False
-        listen_button.config(text="Start Listening")
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "System: Stopped listening for wake word.\n")
-        chat_window.config(state=tk.DISABLED)
-        chat_window.yview(tk.END)
-    else:
-        is_listening = True
-        listen_button.config(text="Stop Listening")
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "System: Started listening for wake word.\n")
-        chat_window.config(state=tk.DISABLED)
-        chat_window.yview(tk.END)
-        listen_thread = threading.Thread(target=continuous_listen, daemon=True)
-        listen_thread.start()
 
 def toggle_kb(kb_name):
     if kb_name in selected_kbs:
@@ -295,7 +306,7 @@ def create_kb_checkboxes(parent):
 def open_settings():
     settings_window = tk.Toplevel(root)
     settings_window.title("Settings")
-    settings_window.geometry("400x400")  # Increased height to accommodate KB checkboxes
+    settings_window.geometry("400x600")
 
     ttk.Label(settings_window, text="Use Knowledge Base:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
     use_knowledge_var = tk.BooleanVar(value=use_knowledge)
@@ -342,6 +353,14 @@ def open_settings():
         cb = ttk.Checkbutton(kb_frame, text=kb, variable=kb_vars[kb])
         cb.grid(row=i, column=0, sticky="w", padx=5, pady=2)
 
+    # Add Reset Chat button
+    reset_button = ttk.Button(settings_window, text="Reset Chat", command=reset_chat)
+    reset_button.grid(row=9, column=0, columnspan=2, pady=5)
+
+    # Add to Knowledge Base button
+    add_kb_button = ttk.Button(settings_window, text="Add to Knowledge Base", command=add_to_knowledge_base)
+    add_kb_button.grid(row=10, column=0, columnspan=2, pady=5)
+
     def save_settings():
         global use_knowledge, selected_kbs
         use_knowledge = use_knowledge_var.get()
@@ -358,7 +377,7 @@ def open_settings():
         
         settings_window.destroy()
 
-    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=9, column=0, columnspan=2, pady=20)
+    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=11, column=0, columnspan=2, pady=20)
 
 def text_to_speech(text):
     pygame.mixer.init()
@@ -471,6 +490,15 @@ configure_interpreter()
 
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+# Create a menu bar
+menu_bar = tk.Menu(root)
+root.config(menu=menu_bar)
+
+# Create a File menu
+file_menu = tk.Menu(menu_bar, tearoff=0)
+menu_bar.add_cascade(label="File", menu=file_menu)
+file_menu.add_command(label="Settings", command=open_settings)
+
 # Bind Ctrl+C to the interrupt function
 root.bind('<Control-c>', interrupt)
 root.bind('<Return>', send_message)
@@ -479,7 +507,7 @@ root.bind('<Return>', send_message)
 chat_window = scrolledtext.ScrolledText(root, wrap=tk.WORD, state=tk.DISABLED)
 chat_window.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-# Create a text widget for user input
+# Create a text widget for user input (initially visible)
 input_box = tk.Text(root, height=3)
 input_box.pack(padx=10, pady=10, fill=tk.X, expand=False)
 
@@ -487,38 +515,20 @@ input_box.pack(padx=10, pady=10, fill=tk.X, expand=False)
 button_frame = tk.Frame(root)
 button_frame.pack(padx=10, pady=10, fill=tk.X)
 
-# Create a send button
+# Create a send button (initially visible)
 send_button = tk.Button(button_frame, text="Send", command=send_message)
 send_button.pack(side=tk.LEFT, padx=5)
 
-# Create a settings button
-settings_button = tk.Button(button_frame, text="Settings", command=open_settings)
-settings_button.pack(side=tk.LEFT, padx=5)
-
-# Create a reset button
-reset_button = tk.Button(button_frame, text="Reset", command=reset_chat)
-reset_button.pack(side=tk.LEFT, padx=5)
+# Create a speak button (initially hidden)
+speak_button = tk.Button(button_frame, text="Speak", command=recognize_speech)
 
 # Create an interrupt button
 interrupt_button = tk.Button(button_frame, text="Interrupt", command=interrupt)
 interrupt_button.pack(side=tk.LEFT, padx=5)
 
-# Create a checkbox to toggle text-to-speech
-tts_var = tk.BooleanVar()
-tts_checkbox = tk.Checkbutton(root, text="Enable Text-to-Speech", variable=tts_var)
-tts_checkbox.pack(padx=10, pady=10)
-
-# Create a toggle listening button
-listen_button = tk.Button(button_frame, text="Start Listening", command=toggle_listening)
-listen_button.pack(side=tk.LEFT, padx=5)
-
-# Add a Speak button
-speak_button = tk.Button(button_frame, text="Speak", command=recognize_speech)
-speak_button.pack(side=tk.LEFT, padx=5)
-
-# Add a new button to the button frame
-add_kb_button = tk.Button(button_frame, text="Add to KB", command=add_to_knowledge_base)
-add_kb_button.pack(side=tk.LEFT, padx=5)
+# Create a mode toggle button
+mode_button = tk.Button(button_frame, text="Switch to Voice Mode", command=toggle_mode)
+mode_button.pack(side=tk.LEFT, padx=5)
 
 # Run the application
 root.mainloop()
