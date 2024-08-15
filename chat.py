@@ -187,21 +187,32 @@ def process_input(user_input):
         full_response = ""
         response_generator = get_interpreter_response(context_text, user_input)
 
+        # Store the starting position for the streamed response
+        stream_start = chat_window.index(tk.END)
+
         for message in response_generator:
             if isinstance(message, dict) and 'content' in message:
                 content = message['content']
                 if content is not None:
                     content = str(content)
                     full_response += content
-                    chat_window.insert(tk.END, content)
+                    chat_window.insert(tk.END, content, "stream")
                     chat_window.see(tk.END)
                     root.update_idletasks()
 
         # Get the final response from the last message
         final_response = interpreter.messages[-1]['content'] if interpreter.messages else full_response
 
+        # Remove the streamed content and insert the final response with color
+        chat_window.delete(stream_start, tk.END)
+        chat_window.insert(tk.END, final_response + "\n", "final_response")
+        
+        # Configure tags for styling
+        chat_window.tag_configure("stream", foreground="gray")
+        chat_window.tag_configure("final_response", foreground="black")
+
         if use_knowledge and sources:
-            chat_window.insert(tk.END, "\nSources:\n" + "\n".join(sources) + "\n")
+            chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
         
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
