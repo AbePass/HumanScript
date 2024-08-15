@@ -122,6 +122,7 @@ def send_message(event=None):
     user_input = input_box.get("1.0", tk.END).strip()
     if user_input:
         process_input(user_input)
+        input_box.delete("1.0", tk.END)  # Clear the input box after sending
 
 def recognize_speech(event=None):
     # Stop the text-to-speech playback if pygame mixer is initialized
@@ -178,25 +179,45 @@ def process_input(user_input):
         context_text, sources = None, []
     
     try:
-        response = get_interpreter_response(context_text, user_input)
+        chat_window.config(state=tk.NORMAL)
+        chat_window.insert(tk.END, "Bot: ")
+        chat_window.config(state=tk.DISABLED)
+        chat_window.yview(tk.END)
+        
+        response_generator = get_interpreter_response(context_text, user_input)
+        full_response = ""
+        for message in response_generator:
+            if isinstance(message, dict) and 'content' in message:
+                content = message['content']
+                if content is not None:
+                    content = str(content)  # Convert content to string
+                    full_response += content
+                    chat_window.config(state=tk.NORMAL)
+                    chat_window.insert(tk.END, content)
+                    chat_window.config(state=tk.DISABLED)
+                    chat_window.yview(tk.END)
+                    root.update_idletasks()  # Update the UI after each chunk
+        
+        chat_window.config(state=tk.NORMAL)
+        chat_window.insert(tk.END, "\n")
+        if use_knowledge and sources:
+            chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
+        chat_window.config(state=tk.DISABLED)
+        chat_window.yview(tk.END)
+        
+        if is_voice_mode:
+            text_to_speech(full_response)
     except Exception as e:
-        response = f"There was an error processing your request: {e}"
+        error_message = f"There was an error processing your request: {str(e)}"
+        chat_window.config(state=tk.NORMAL)
+        chat_window.insert(tk.END, "Bot: " + error_message + "\n")
+        chat_window.config(state=tk.DISABLED)
+        chat_window.yview(tk.END)
         print(f"Error: {e}")  # Print the exception details
-    
-    chat_window.config(state=tk.NORMAL)
-    chat_window.insert(tk.END, "Bot: " + response + "\n")
-    if use_knowledge and sources:
-        chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
-    chat_window.config(state=tk.DISABLED)
-    chat_window.yview(tk.END)
-    
-    if is_voice_mode:
-        text_to_speech(response)
 
 def sanitize(filename):
     """Sanitize to remove invalid characters."""
     return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
-
 
 def get_interpreter_response(context, query):
     # Check if the query is a hard-coded command
@@ -207,20 +228,18 @@ def get_interpreter_response(context, query):
         message = query
     else:
         message = command_response
-    # If context is None or empty, just use the query
 
+    # If context is None or empty, just use the query
     if not context:
         prompt = query
     else:
         # Combine context and query in a more clear way
         prompt = f"Context: {context}\n\nQuery: {query}"
         
-        sanitized_prompt = sanitize(prompt)
-        message = sanitized_prompt
+    sanitized_prompt = sanitize(prompt)
+    message = sanitized_prompt
 
-    messages = interpreter.chat(message, display=False, stream=False)
-    response = messages[-1]['content'] if messages else "No response"
-    return response
+    return interpreter.chat(message, display=False, stream=True)
 
 def reset_chat():
     # reset the interpreter

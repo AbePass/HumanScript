@@ -10,7 +10,7 @@ def execute_command(query):
         # #if you say what's on my screen, show my screen, capture my screen, or screenshot, it will take a screenshot
         (r'\b(?:what(?:\'s|\s+is)?|show)\s+(?:on|in)\s+my\s+screen\b', take_screenshot_command), 
         # # if you say a phrase that includes a file path, it will detect the file path
-        # (r'\b(?:[a-zA-Z]:\\|/)?(?:[\w-]+\\|/)*[\w-]+\.\w+\b', detect_filepath_command),
+        (r'\b(?:[a-zA-Z]:\\|/)?(?:[\w-]+\\|/)*[\w-]+\.\w+\b', detect_filepath_command),
     ]
     
     # Normalize the query: convert to lowercase
@@ -49,7 +49,6 @@ def detect_filepath_command(query):
             }
             return message
         else:
-            return f"The file at {file_path} is not an image."
-    return "No valid file path found in the query."
+            return query
 
 # Add more command functions as needed
