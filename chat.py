@@ -167,7 +167,7 @@ def process_input(user_input):
     global is_voice_mode, interpreter
 
     chat_window.config(state=tk.NORMAL)
-    chat_window.insert(tk.END, "You: " + user_input + "\n")
+    chat_window.insert(tk.END, "You: " + user_input + "\n", "user")
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
     
@@ -182,7 +182,7 @@ def process_input(user_input):
     
     try:
         chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "Bot: ")
+        chat_window.insert(tk.END, "Bot: ", "bot")
         
         full_response = ""
         response_generator = get_interpreter_response(context_text, user_input)
@@ -196,7 +196,7 @@ def process_input(user_input):
                 if content is not None:
                     content = str(content)
                     full_response += content
-                    chat_window.insert(tk.END, content, "stream")
+                    chat_window.insert(tk.END, content, "bot_stream")
                     chat_window.see(tk.END)
                     root.update_idletasks()
 
@@ -205,14 +205,13 @@ def process_input(user_input):
 
         # Remove the streamed content and insert the final response with color
         chat_window.delete(stream_start, tk.END)
-        chat_window.insert(tk.END, final_response + "\n", "final_response")
+        chat_window.insert(tk.END, "\n" + final_response + "\n", "bot_final")
         
-        # Configure tags for styling
-        chat_window.tag_configure("stream", foreground="gray")
-        chat_window.tag_configure("final_response", foreground="black")
-
         if use_knowledge and sources:
             chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
+        
+        # Add newlines to separate responses
+        chat_window.insert(tk.END, "\n\n")
         
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
@@ -223,7 +222,9 @@ def process_input(user_input):
     except Exception as e:
         error_message = f"There was an error processing your request: {str(e)}"
         chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "Bot: " + error_message + "\n")
+        chat_window.insert(tk.END, "Bot: " + error_message + "\n", "bot")
+        # Add newlines after error message as well
+        chat_window.insert(tk.END, "\n\n")
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         print(f"Error: {e}")  # Print the exception details
@@ -571,9 +572,26 @@ file_menu.add_command(label="Settings", command=open_settings)
 root.bind('<Control-c>', interrupt)
 root.bind('<Return>', send_message)
 
-# Create a scrolled text widget for the chat window
-chat_window = scrolledtext.ScrolledText(root, wrap=tk.WORD, state=tk.DISABLED)
-chat_window.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+# Create a frame for the chat window
+chat_frame = tk.Frame(root)
+chat_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+# Create a text widget for the chat window
+chat_window = tk.Text(chat_frame, wrap=tk.WORD, state=tk.DISABLED, cursor="arrow")
+chat_window.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+# Create a scrollbar for the chat window
+scrollbar = ttk.Scrollbar(chat_frame, command=chat_window.yview)
+scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+# Configure the chat window to use the scrollbar
+chat_window.config(yscrollcommand=scrollbar.set)
+
+# Configure tags for message alignment and colors
+chat_window.tag_configure("user", justify="right", foreground="blue")
+chat_window.tag_configure("bot", justify="left", foreground="green")
+chat_window.tag_configure("bot_stream", justify="left", foreground="gray")
+chat_window.tag_configure("bot_final", justify="left", foreground="green")
 
 # Create a text widget for user input (initially visible)
 input_box = tk.Text(root, height=3)

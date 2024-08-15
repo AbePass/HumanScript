@@ -3,6 +3,8 @@
 # Wake word
 WAKE_WORD = "hey computer"
 
+# Verbose mode
+VERBOSE_MODE = False
 
 # Interpreter settings
 INTERPRETER_SETTINGS = {
@@ -15,7 +17,7 @@ INTERPRETER_SETTINGS = {
     "context_window": 10000,
     "conversation_history_path": "conversation_history",
     "import_computer_api": True
-}
+    }
 
 # System message for the interpreter
 SYSTEM_MESSAGE = '''
