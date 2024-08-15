@@ -3,3 +3,5 @@ https://www.geeksforgeeks.org/image-scraping-with-python/
 https://dev.to/devrx/shell-scripting-101-essential-commands-for-every-developer-j3p
 https://www.howto-do.it/how-to-use-computer-without-mouse/https://hackr.io/blog/best-python-libraries
 https://hackr.io/blog/best-python-libraries
+https://thepythoncode.com/article/reading-emails-in-python
+https://www.systoolsgroup.com/imap/

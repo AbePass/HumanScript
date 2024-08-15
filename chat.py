@@ -164,6 +164,8 @@ def recognize_speech(event=None):
             os.unlink(temp_audio_path)
 
 def process_input(user_input):
+    global is_voice_mode, interpreter
+
     chat_window.config(state=tk.NORMAL)
     chat_window.insert(tk.END, "You: " + user_input + "\n")
     chat_window.config(state=tk.DISABLED)
@@ -181,32 +183,32 @@ def process_input(user_input):
     try:
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, "Bot: ")
-        chat_window.config(state=tk.DISABLED)
-        chat_window.yview(tk.END)
         
-        response_generator = get_interpreter_response(context_text, user_input)
         full_response = ""
+        response_generator = get_interpreter_response(context_text, user_input)
+
         for message in response_generator:
             if isinstance(message, dict) and 'content' in message:
                 content = message['content']
                 if content is not None:
-                    content = str(content)  # Convert content to string
+                    content = str(content)
                     full_response += content
-                    chat_window.config(state=tk.NORMAL)
                     chat_window.insert(tk.END, content)
-                    chat_window.config(state=tk.DISABLED)
-                    chat_window.yview(tk.END)
-                    root.update_idletasks()  # Update the UI after each chunk
-        
-        chat_window.config(state=tk.NORMAL)
-        chat_window.insert(tk.END, "\n")
+                    chat_window.see(tk.END)
+                    root.update_idletasks()
+
+        # Get the final response from the last message
+        final_response = interpreter.messages[-1]['content'] if interpreter.messages else full_response
+
         if use_knowledge and sources:
-            chat_window.insert(tk.END, "Sources:\n" + "\n".join(sources) + "\n")
+            chat_window.insert(tk.END, "\nSources:\n" + "\n".join(sources) + "\n")
+        
         chat_window.config(state=tk.DISABLED)
         chat_window.yview(tk.END)
         
         if is_voice_mode:
-            text_to_speech(full_response)
+            threading.Thread(target=text_to_speech, args=(final_response,), daemon=True).start()
+
     except Exception as e:
         error_message = f"There was an error processing your request: {str(e)}"
         chat_window.config(state=tk.NORMAL)
@@ -382,7 +384,7 @@ def open_settings():
 
     # Add a new section for environment variables
     env_frame = ttk.LabelFrame(settings_window, text="Environment Variables")
-    env_frame.grid(row=12, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+    env_frame.grid(row=11, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
 
     env_vars = {}
     row = 0
@@ -432,7 +434,7 @@ def open_settings():
 
         settings_window.destroy()
 
-    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=13, column=0, columnspan=2, pady=20)
+    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=12, column=0, columnspan=2, pady=20)
 
 def text_to_speech(text):
     pygame.mixer.init()
