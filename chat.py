@@ -380,6 +380,33 @@ def open_settings():
     add_kb_button = ttk.Button(settings_window, text="Add to Knowledge Base", command=add_to_knowledge_base)
     add_kb_button.grid(row=10, column=0, columnspan=2, pady=5)
 
+    # Add a new section for environment variables
+    env_frame = ttk.LabelFrame(settings_window, text="Environment Variables")
+    env_frame.grid(row=12, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+
+    env_vars = {}
+    row = 0
+    for key, value in os.environ.items():
+        if key.startswith("CUSTOM_"):
+            env_vars[key] = tk.StringVar(value=value)
+            ttk.Label(env_frame, text=key).grid(row=row, column=0, sticky="w", padx=5, pady=2)
+            ttk.Entry(env_frame, textvariable=env_vars[key], show="*").grid(row=row, column=1, sticky="ew", padx=5, pady=2)
+            row += 1
+
+    def add_env_var():
+        key = simpledialog.askstring("Add Environment Variable", "Enter variable name (will be prefixed with CUSTOM_):")
+        if key:
+            key = f"CUSTOM_{key}"
+            value = simpledialog.askstring("Add Environment Variable", f"Enter value for {key}:")
+            if value:
+                os.environ[key] = value
+                env_vars[key] = tk.StringVar(value=value)
+                ttk.Label(env_frame, text=key).grid(row=row, column=0, sticky="w", padx=5, pady=2)
+                ttk.Entry(env_frame, textvariable=env_vars[key], show="*").grid(row=row, column=1, sticky="ew", padx=5, pady=2)
+
+    add_env_button = ttk.Button(env_frame, text="Add Environment Variable", command=add_env_var)
+    add_env_button.grid(row=row, column=0, columnspan=2, pady=5)
+
     def save_settings():
         global use_knowledge, selected_kbs
         use_knowledge = use_knowledge_var.get()
@@ -394,9 +421,18 @@ def open_settings():
         # Update selected knowledge bases
         selected_kbs = [kb for kb, var in kb_vars.items() if var.get()]
         
+        # Save environment variables
+        for key, var in env_vars.items():
+            os.environ[key] = var.get()
+
+        # Update system message with environment variable names
+        custom_env_vars = [key for key in os.environ if key.startswith("CUSTOM_")]
+        env_var_message = "The following custom environment variables are available: " + ", ".join(custom_env_vars)
+        interpreter.system_message += f"\n\n{env_var_message}"
+
         settings_window.destroy()
 
-    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=11, column=0, columnspan=2, pady=20)
+    ttk.Button(settings_window, text="Save", command=save_settings).grid(row=13, column=0, columnspan=2, pady=20)
 
 def text_to_speech(text):
     pygame.mixer.init()
