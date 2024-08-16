@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import scrolledtext, simpledialog, ttk, filedialog, messagebox
-from interpreter import interpreter
+from tkinter import simpledialog, ttk, filedialog, messagebox
+from interpreter import interpreter, computer
 import os
 import speech_recognition as sr
 from openai import OpenAI
@@ -16,6 +16,7 @@ from config import *  # Import all settings from config.py
 import json
 import shutil
 import commands
+from test import search
 
 
 # Replace the global variables with imports from config

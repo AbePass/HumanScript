@@ -1,10 +1,7 @@
 # Assistant Configuration
 
 # Wake word
-WAKE_WORD = "hey computer"
-
-# Verbose mode
-VERBOSE_MODE = False
+WAKE_WORD = "assistant"
 
 # Interpreter settings
 INTERPRETER_SETTINGS = {
@@ -44,7 +41,11 @@ Query: {query}
 - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
 - Do not repeat yourself in your responses.
 
-
+### Environment Variables:
+- The user's environment variables will be added below with the format CUSTOM_ENV_VARIABLE_NAME.
+- These will hold secure values set by the user, such as API keys, passwords, and other sensitive information.
+- Do not overwrite any existing environment variables.
+- Do not print the environment variables to the console.
 '''
 
 # Text-to-speech settings
