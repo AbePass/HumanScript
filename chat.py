@@ -16,7 +16,6 @@ from config import *  # Import all settings from config.py
 import json
 import shutil
 import commands
-from test import search
 
 
 # Replace the global variables with imports from config
