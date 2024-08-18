@@ -444,6 +444,9 @@ def open_settings():
         env_var_message = "The following custom environment variables are available: " + ", ".join(custom_env_vars)
         interpreter.system_message += f"\n\n{env_var_message}"
 
+        # Refresh the knowledge base list in the main UI
+        refresh_kb_list()
+
         settings_window.destroy()
 
     ttk.Button(settings_window, text="Save", command=save_settings).grid(row=12, column=0, columnspan=2, pady=20)
@@ -550,6 +553,20 @@ def add_content_to_kb(kb_name):
     content_window.grab_set()
     root.wait_window(content_window)
 
+def refresh_kb_list():
+    # Clear existing checkboxes
+    for widget in kb_frame.winfo_children():
+        widget.destroy()
+
+    # Get the updated list of knowledge bases
+    kb_list = [d for d in os.listdir(CHROMA_PATH) if os.path.isdir(os.path.join(CHROMA_PATH, d))]
+
+    # Recreate checkboxes for each knowledge base
+    for kb in kb_list:
+        var = tk.BooleanVar(value=kb in selected_kbs)
+        cb = ttk.Checkbutton(kb_frame, text=kb, variable=var, command=lambda k=kb: toggle_kb(k))
+        cb.pack(anchor=tk.W)
+
 # Set up the main application window
 root = tk.Tk()
 root.title("Chat UI")
@@ -615,6 +632,11 @@ interrupt_button.pack(side=tk.LEFT, padx=5)
 # Create a mode toggle button
 mode_button = tk.Button(button_frame, text="Switch to Voice Mode", command=toggle_mode)
 mode_button.pack(side=tk.LEFT, padx=5)
+
+# After creating the kb_frame in the main UI setup
+kb_frame = ttk.LabelFrame(root, text="Knowledge Bases")
+kb_frame.pack(padx=10, pady=10, fill=tk.X)
+refresh_kb_list()  # Initial population of knowledge bases
 
 # Run the application
 root.mainloop()
