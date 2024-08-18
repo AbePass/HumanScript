@@ -29,7 +29,7 @@ echo Virtual environment setup complete.
 
 REM Activate the virtual environment
 echo Activating the virtual environment...
-call opai\Scripts\activate.bat
+call .\opai\Scripts\activate.bat
 echo Virtual environment activated.
 
 REM Install the necessary packages
@@ -45,4 +45,4 @@ echo pyaudio installed.
 echo.
 echo Open Interpreter has been installed. Run the following command to use it:
 echo.
-echo opai\Scripts\activate.bat && python chat.py
+echo .\opai\Scripts\activate && python .\OpenPI\src\main.py

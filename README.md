@@ -25,7 +25,7 @@ To get started with this assistant framework, follow these steps:
 2. **Clone the Repository**: Clone this repository to your local machine using `git clone https://github.com/AbePass/OpenPI.git`.
 3. **Run the Installer**: Depending on your operating system, run either `.OpenPI\installers\oi-windows-installer` or `bash OpenPI\installers\oi-linux-installer` to set up the virtual environment (make sure to activate the environment using `.\opai\Scripts\activate` or `source opai\bin\activate` if it doesn't do it automatically).
 4. **Configure your assistant**: Edit the Settings/config.py to set up your assistant.
-5. **Run your assistant**: Run the assistant either on your desktop or on your Raspberry Pi using `python OpenPI/UI/chat.py`.
+5. **Run your assistant**: Run the assistant either on your desktop or on your Raspberry Pi using `python OpenPI/src/main.py`.
 6. **Add your own knowledge**: Add your own knowledge in the settings menu of the UI.
 
 For detailed instructions and tutorials, please refer to the documentation provided in this repository.
@@ -36,8 +36,8 @@ For detailed instructions and tutorials, please refer to the documentation provi
 
 The repository is organized into the following main directories:
 
-- **UI/**: Contains the user interface components, including the main chat application (`chat.py`).
-- **tools/**: Includes various utility scripts for building and querying the vector database, as well as command execution.
+- **src/UI/**: Contains the user interface components, including the main chat application (`chat.py`).
+- **src/tools/**: Includes various utility scripts for building and querying the vector database, as well as command execution.
   - `build_vector_database.py`: Script to build and update the vector database.
   - `query_vector_database.py`: Script to query the vector database.
   - `commands.py`: Script to handle different commands and their execution.

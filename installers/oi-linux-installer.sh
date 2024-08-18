@@ -24,4 +24,4 @@ pip install pyaudio
 echo ""
 echo "Open Interpreter has been installed. Run the following command to use it: "
 echo ""
-echo "source opai/bin/activate && python chat.py"
+echo "source opai/bin/activate && python .\OpenPI\src\main.py"
