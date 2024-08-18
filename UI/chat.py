@@ -18,7 +18,6 @@ import shutil
 import tools.commands as commands
 import logging
 
-
 # Replace the global variables with imports from config
 use_knowledge = USE_KNOWLEDGE
 selected_kbs = DEFAULT_SELECTED_KBS.copy()
