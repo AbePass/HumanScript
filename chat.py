@@ -16,6 +16,7 @@ from config import *  # Import all settings from config.py
 import json
 import shutil
 import commands
+import logging
 
 
 # Replace the global variables with imports from config
@@ -134,10 +135,16 @@ def recognize_speech(event=None):
     chat_window.insert(tk.END, "System: Listening for command...\n")
     chat_window.config(state=tk.DISABLED)
     chat_window.yview(tk.END)
-    with sr.Microphone() as source:
-        audio = recognizer.listen(source)
     
     try:
+        with sr.Microphone() as source:
+            logging.info("Adjusting for ambient noise...")
+            recognizer.adjust_for_ambient_noise(source, duration=1)
+            logging.info("Listening...")
+            audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
+        
+        logging.info("Audio captured, attempting to transcribe...")
+        
         # Save the audio to a temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
             temp_audio.write(audio.get_wav_data())
@@ -151,9 +158,17 @@ def recognize_speech(event=None):
             )
         
         user_input = transcript.text
+        logging.info(f"Transcribed: {user_input}")
         process_input(user_input)
         
+    except sr.WaitTimeoutError:
+        logging.warning("Listening timed out. No speech detected.")
+        chat_window.config(state=tk.NORMAL)
+        chat_window.insert(tk.END, "System: Listening timed out. Please try again.\n")
+        chat_window.config(state=tk.DISABLED)
+        chat_window.yview(tk.END)
     except Exception as e:
+        logging.error(f"Error in speech recognition: {str(e)}")
         chat_window.config(state=tk.NORMAL)
         chat_window.insert(tk.END, f"System: Error in speech recognition: {str(e)}\n")
         chat_window.config(state=tk.DISABLED)
@@ -301,22 +316,29 @@ def continuous_listen():
     is_listening = True
     recognizer = sr.Recognizer()
     beep = generate_beep()
+    
     while is_listening:
         try:
             with sr.Microphone() as source:
-                print("Listening for wake word...")
+                logging.info("Adjusting for ambient noise...")
+                recognizer.adjust_for_ambient_noise(source, duration=1)
+                logging.info("Listening for wake word...")
                 audio = recognizer.listen(source, phrase_time_limit=3)
             
-            text = recognizer.recognize_google(audio).lower()
-            print(f"Heard: {text}")
-            if wake_word in text:
-                print("Wake word detected!")
-                beep.play()  # Play the beep sound
-                recognize_speech()
-        except sr.UnknownValueError:
-            pass
-        except sr.RequestError as e:
-            print(f"Could not request results from Google Speech Recognition service; {e}")
+            try:
+                text = recognizer.recognize_google(audio).lower()
+                logging.info(f"Heard: {text}")
+                if wake_word in text:
+                    logging.info("Wake word detected!")
+                    beep.play()  # Play the beep sound
+                    recognize_speech()
+            except sr.UnknownValueError:
+                logging.info("Speech was unintelligible")
+            except sr.RequestError as e:
+                logging.error(f"Could not request results from Google Speech Recognition service; {e}")
+        except Exception as e:
+            logging.error(f"Error in continuous listening: {str(e)}")
+            time.sleep(1)  # Add a small delay to prevent rapid looping in case of persistent errors
 
 def toggle_kb(kb_name):
     if kb_name in selected_kbs:
