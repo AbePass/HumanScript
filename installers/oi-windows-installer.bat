@@ -34,7 +34,7 @@ echo Virtual environment activated.
 
 REM Install the necessary packages
 echo Installing necessary packages...
-pip install open-interpreter tk pillow speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb openai pygame python-dotenv unstructured
+pip install open-interpreter tk pillow speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb openai pygame python-dotenv unstructured unstructured[md] unstructured[pdf] unstructured[py]
 echo Necessary packages installed.
 
 REM Install pyaudio
