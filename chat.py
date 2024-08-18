@@ -377,21 +377,30 @@ def open_settings():
     kb_frame = ttk.LabelFrame(settings_window, text="Knowledge Bases")
     kb_frame.grid(row=8, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
 
-    # Get the list of knowledge bases (assuming they are subdirectories in the CHROMA_PATH)
-    kb_list = [d for d in os.listdir(CHROMA_PATH) if os.path.isdir(os.path.join(CHROMA_PATH, d))]
-
     kb_vars = {}
-    for i, kb in enumerate(kb_list):
-        kb_vars[kb] = tk.BooleanVar(value=kb in selected_kbs)
-        cb = ttk.Checkbutton(kb_frame, text=kb, variable=kb_vars[kb])
-        cb.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+
+    def refresh_kb_list():
+        # Clear existing checkboxes
+        for widget in kb_frame.winfo_children():
+            widget.destroy()
+
+        # Get the updated list of knowledge bases
+        kb_list = [d for d in os.listdir(CHROMA_PATH) if os.path.isdir(os.path.join(CHROMA_PATH, d))]
+
+        # Recreate checkboxes for each knowledge base
+        for i, kb in enumerate(kb_list):
+            kb_vars[kb] = tk.BooleanVar(value=kb in selected_kbs)
+            cb = ttk.Checkbutton(kb_frame, text=kb, variable=kb_vars[kb])
+            cb.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+
+    refresh_kb_list()  # Initial population of knowledge bases
 
     # Add Reset Chat button
     reset_button = ttk.Button(settings_window, text="Reset Chat", command=reset_chat)
     reset_button.grid(row=9, column=0, columnspan=2, pady=5)
 
     # Add to Knowledge Base button
-    add_kb_button = ttk.Button(settings_window, text="Add to Knowledge Base", command=add_to_knowledge_base)
+    add_kb_button = ttk.Button(settings_window, text="Add to Knowledge Base", command=lambda: add_to_knowledge_base(refresh_kb_list))
     add_kb_button.grid(row=10, column=0, columnspan=2, pady=5)
 
     # Add a new section for environment variables
@@ -444,9 +453,6 @@ def open_settings():
         env_var_message = "The following custom environment variables are available: " + ", ".join(custom_env_vars)
         interpreter.system_message += f"\n\n{env_var_message}"
 
-        # Refresh the knowledge base list in the main UI
-        refresh_kb_list()
-
         settings_window.destroy()
 
     ttk.Button(settings_window, text="Save", command=save_settings).grid(row=12, column=0, columnspan=2, pady=20)
@@ -480,7 +486,7 @@ def text_to_speech(text):
     except PermissionError:
         print(f"Could not delete temporary file: {temp_audio_path}")
 
-def add_to_knowledge_base():
+def add_to_knowledge_base(refresh_callback):
     # Get list of existing knowledge bases
     kb_list = [d for d in os.listdir(KB_PATH) if os.path.isdir(os.path.join(KB_PATH, d))]
     
@@ -492,7 +498,7 @@ def add_to_knowledge_base():
     def select_existing_kb():
         kb_name = kb_var.get()
         kb_window.destroy()
-        add_content_to_kb(kb_name)
+        add_content_to_kb(kb_name, refresh_callback)
     
     def create_new_kb():
         new_kb_name = simpledialog.askstring("New Knowledge Base", "Enter name for new knowledge base:")
@@ -502,7 +508,7 @@ def add_to_knowledge_base():
             with open(os.path.join(new_kb_path, "urls.txt"), 'w') as f:
                 pass  # Create empty urls.txt file
             kb_window.destroy()
-            add_content_to_kb(new_kb_name)
+            add_content_to_kb(new_kb_name, refresh_callback)
     
     kb_var = tk.StringVar()
     kb_dropdown = ttk.Combobox(kb_window, textvariable=kb_var, values=kb_list, state="readonly")
@@ -519,7 +525,7 @@ def add_to_knowledge_base():
     kb_window.grab_set()
     root.wait_window(kb_window)
 
-def add_content_to_kb(kb_name):
+def add_content_to_kb(kb_name, refresh_callback):
     content_window = tk.Toplevel(root)
     content_window.title(f"Add to {kb_name}")
     content_window.geometry("300x150")
@@ -542,6 +548,7 @@ def add_content_to_kb(kb_name):
         content_window.destroy()
         build_vector_database(kb_name)  # Pass the specific knowledge base name
         messagebox.showinfo("Success", f"Knowledge base '{kb_name}' updated successfully!")
+        refresh_callback()  # Refresh the KB list in the settings window
     
     file_button = tk.Button(content_window, text="Add File", command=add_file)
     file_button.pack(pady=10)
@@ -552,20 +559,6 @@ def add_content_to_kb(kb_name):
     content_window.transient(root)
     content_window.grab_set()
     root.wait_window(content_window)
-
-def refresh_kb_list():
-    # Clear existing checkboxes
-    for widget in kb_frame.winfo_children():
-        widget.destroy()
-
-    # Get the updated list of knowledge bases
-    kb_list = [d for d in os.listdir(CHROMA_PATH) if os.path.isdir(os.path.join(CHROMA_PATH, d))]
-
-    # Recreate checkboxes for each knowledge base
-    for kb in kb_list:
-        var = tk.BooleanVar(value=kb in selected_kbs)
-        cb = ttk.Checkbutton(kb_frame, text=kb, variable=var, command=lambda k=kb: toggle_kb(k))
-        cb.pack(anchor=tk.W)
 
 # Set up the main application window
 root = tk.Tk()
@@ -632,11 +625,6 @@ interrupt_button.pack(side=tk.LEFT, padx=5)
 # Create a mode toggle button
 mode_button = tk.Button(button_frame, text="Switch to Voice Mode", command=toggle_mode)
 mode_button.pack(side=tk.LEFT, padx=5)
-
-# After creating the kb_frame in the main UI setup
-kb_frame = ttk.LabelFrame(root, text="Knowledge Bases")
-kb_frame.pack(padx=10, pady=10, fill=tk.X)
-refresh_kb_list()  # Initial population of knowledge bases
 
 # Run the application
 root.mainloop()
