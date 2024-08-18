@@ -1,3 +1,10 @@
-provider_config.json
 __pycache__/
-conversation_history/
+conversation_history/*
+Databases/*
+Knowledge/*
+User_Data/*
+
+!conversation_history/.gitkeep
+!Databases/.gitkeep
+!Knowledge/.gitkeep
+!User_Data/.gitkeep

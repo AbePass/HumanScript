@@ -5,17 +5,17 @@ import os
 import speech_recognition as sr
 from openai import OpenAI
 import threading
-from query_vector_database import query_vector_database
-from build_vector_database import build_vector_database
+from tools.query_vector_database import query_vector_database
+from tools.build_vector_database import build_vector_database
 import tempfile
 import re
 import pygame
 import time
 import numpy as np
-from config import *  # Import all settings from config.py
+from Settings.config import *  # Import all settings from config.py
 import json
 import shutil
-import commands
+import tools.commands as commands
 import logging
 
 
@@ -64,7 +64,7 @@ def configure_interpreter():
     root.wait_window(provider_window)
 
 def configure_provider(provider):
-    config_file = 'provider_config.json'
+    config_file = 'User_Data/provider_config.json'
     
     # Load existing configuration if available
     if os.path.exists(config_file):

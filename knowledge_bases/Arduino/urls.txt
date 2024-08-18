@@ -1,2 +1,0 @@
-https://arduino.github.io/arduino-cli/1.0/getting-started/
-https://docs.arduino.cc/learn/programming/sketches/

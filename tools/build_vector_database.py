@@ -6,7 +6,7 @@ from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 import os
 import shutil
-from config import CHROMA_PATH, KB_PATH
+from Settings.config import CHROMA_PATH, KB_PATH
 import time
 
 # Load environment variables
