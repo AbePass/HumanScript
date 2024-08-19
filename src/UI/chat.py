@@ -203,10 +203,11 @@ class ChatUI:
         
         # Update the UI immediately
         self.root.update_idletasks()
-        
+        querier = VectorDatabaseQuery()
         # Query the database
         if self.use_knowledge and self.selected_kbs:
-            context_text, sources = VectorDatabaseQuery.query_vector_database(user_input, self.selected_kbs)
+            print("Querying vector database")
+            context_text, sources = querier.query_vector_database(user_input, self.selected_kbs)
         else:
             context_text, sources = None, []
         
@@ -259,9 +260,6 @@ class ChatUI:
             self.chat_window.yview(tk.END)
             print(f"Error: {e}")  # Print the exception details
 
-    def sanitize(self, filename):
-        """Sanitize to remove invalid characters."""
-        return re.sub(r'[<>:"/\\|?*\n]', '_', filename)
 
     def get_interpreter_response(self, context, query):
         # Create an instance of CommandExecutor
@@ -271,8 +269,7 @@ class ChatUI:
         command_response = command_executor.execute_command(query)
         
         if command_response is not None:
-            # Command matched, return the command response directly
-            return [command_response]
+            prompt = command_response
         
         # If context is None or empty, just use the query
         if not context:
@@ -281,10 +278,8 @@ class ChatUI:
             # Combine context and query in a more clear way
             prompt = f"Context: {context}\n\nQuery: {query}"
             
-        sanitized_prompt = self.sanitize(prompt)
-        message = sanitized_prompt
 
-        return interpreter.chat(message, display=False, stream=True)
+        return interpreter.chat(prompt, display=False, stream=True)
 
     def reset_chat(self):
         # reset the interpreter
@@ -580,7 +575,8 @@ class ChatUI:
         
         def update_kb():
             content_window.destroy()
-            VectorDatabaseBuilder.build_vector_database(kb_name)  # Pass the specific knowledge base name
+            builder = VectorDatabaseBuilder()  # Instantiate the class
+            builder.build_vector_database(kb_name)  # Call the method on the instance
             messagebox.showinfo("Success", f"Knowledge base '{kb_name}' updated successfully!")
             refresh_callback()  # Refresh the KB list in the settings window
         
