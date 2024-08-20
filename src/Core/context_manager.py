@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 import os
 from Settings.config import CHROMA_PATH
 
-class VectorDatabaseQuery:
+class ContextManager:
     def __init__(self):
         self.openai_key = os.environ["OPENAI_API_KEY"]
         self.embedding_function = OpenAIEmbeddings(openai_api_key=self.openai_key)

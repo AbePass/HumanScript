@@ -5,16 +5,13 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 import os
-import shutil
 from Settings.config import CHROMA_PATH, KB_PATH
-import time
-
 # Load environment variables
 load_dotenv()
 
-class VectorDatabaseBuilder:
-    def __init__(self):
-        pass
+class KnowledgeManager:
+    def __init__(self, root):
+        self.root = root
 
     def load_docs_folder(self, knowledge_base):
         kb_path = os.path.join(KB_PATH, knowledge_base)
@@ -92,12 +89,16 @@ class VectorDatabaseBuilder:
 
     def build_vector_database(self, knowledge_base=None):
         if knowledge_base:
-            # Update only the specified knowledge base
-            if os.path.isdir(os.path.join(KB_PATH, knowledge_base)):
+            kb_path = os.path.join(KB_PATH, knowledge_base)
+            if os.path.isdir(kb_path):
                 print(f"Processing knowledge base: {knowledge_base}")
                 self.load_docs_folder(knowledge_base)
             else:
-                print(f"Knowledge base '{knowledge_base}' not found.")
+                print(f"Creating new knowledge base.")
+                os.makedirs(os.path.join(kb_path, "docs"))
+                with open(os.path.join(kb_path, "urls.txt"), 'w') as f:
+                    pass  # Create an empty urls.txt file
+                self.load_docs_folder(knowledge_base)
         else:
             # Update all knowledge bases
             knowledge_bases = [d for d in os.listdir(KB_PATH) 

@@ -32,21 +32,6 @@ For detailed instructions and tutorials, please refer to the documentation provi
 
 ## Structure
 
-### Folder Structure
-
-The repository is organized into the following main directories:
-
-- **src/UI/**: Contains the user interface components, including the main chat application (`chat.py`).
-- **src/tools/**: Includes various utility scripts for building and querying the vector database, as well as command execution.
-  - `build_vector_database.py`: Script to build and update the vector database.
-  - `query_vector_database.py`: Script to query the vector database.
-  - `commands.py`: Script to handle different commands and their execution.
-- **Settings/**: Contains configuration files for setting up the assistant.
-- **conversation_history/**: Stores the history of conversations for context-aware interactions.
-- **Databases/**: Directory where the vector databases are stored.
-- **Knowledge/**: Directory for storing knowledge bases.
-- **User_Data/**: Contains user-specific data and configurations.
-
 ## Acknowledgements
 
 This project uses [Open Interpreter](https://github.com/KillianLucas/open-interpreter), which is licensed under AGPL.

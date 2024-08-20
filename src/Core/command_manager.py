@@ -17,7 +17,6 @@ class CommandExecutor:
     def execute_command(self, query):
         # Normalize the query: convert to lowercase
         normalized_query = query.lower()
-        print(f"Normalized query: {normalized_query}")
         
         for pattern, func in self.commands:
             if re.search(pattern, normalized_query, re.IGNORECASE):

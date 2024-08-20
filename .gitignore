@@ -1,8 +1,10 @@
 __pycache__/
+.pytest_cache/
+.vscode/
 conversation_history/*
-Databases/*
+src/Databases/*
 Knowledge/*
-User_Data/*
+src/Settings/provider_config.json
 
 !conversation_history/.gitkeep
 !Databases/.gitkeep
