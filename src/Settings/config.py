@@ -59,7 +59,7 @@ CHROMA_PATH = "src/Databases"
 KB_PATH = "Knowledge"
 
 # Default selected knowledge bases
-DEFAULT_SELECTED_KBS = ["new test", "openpi", "test"]
+DEFAULT_SELECTED_KBS = []
 
 # Audio settings
 BEEP_FREQUENCY = 440  # Frequency of the beep in Hz (A4 note)
