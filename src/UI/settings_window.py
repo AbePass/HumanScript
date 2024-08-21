@@ -1,11 +1,12 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
-from Settings.config import USE_KNOWLEDGE, DEFAULT_SELECTED_KBS, WAKE_WORD, INTERPRETER_SETTINGS, CHROMA_PATH, KB_PATH
+from Settings.config import INTERPRETER_SETTINGS, CHROMA_PATH, KB_PATH
 from Core.knowledge_manager import KnowledgeManager
 import json
 import os
 import shutil
 from interpreter import interpreter
+import importlib
 
 class SettingsWindow:
   def __init__(self, parent, chat_ui):
@@ -13,8 +14,8 @@ class SettingsWindow:
     self.chat_ui = chat_ui
     self.window = tk.Toplevel(parent)
     self.window.title("Settings")
-    self.window.geometry("500x700")
-    self.window.resizable(False, False)
+    self.window.geometry("600x800")
+    self.window.resizable(True, True)
 
     self.knowledge_manager = KnowledgeManager(self.window)
 
@@ -22,9 +23,6 @@ class SettingsWindow:
     self.load_current_settings()
 
   def create_widgets(self):
-    # Use Knowledge
-    self.use_knowledge_var = tk.BooleanVar()
-    ttk.Checkbutton(self.window, text="Use Knowledge", variable=self.use_knowledge_var).pack(pady=5)
 
     # Interpreter Settings
     interpreter_frame = ttk.LabelFrame(self.window, text="Interpreter Settings")
@@ -121,62 +119,47 @@ class SettingsWindow:
         ttk.Entry(row_frame, textvariable=self.env_vars[key], show="*").pack(side=tk.RIGHT, expand=True, fill=tk.X)
 
   def load_current_settings(self):
-    self.use_knowledge_var.set(self.chat_ui.use_knowledge)
     self.wake_word_entry.insert(0, self.chat_ui.wake_word)
     
-    self.supports_vision_var.set(INTERPRETER_SETTINGS["supports_vision"])
-    self.supports_functions_var.set(INTERPRETER_SETTINGS["supports_functions"])
-    self.auto_run_var.set(INTERPRETER_SETTINGS["auto_run"])
-    self.loop_var.set(INTERPRETER_SETTINGS["loop"])
-    self.temperature_var.set(INTERPRETER_SETTINGS["temperature"])
-    self.max_tokens_var.set(INTERPRETER_SETTINGS["max_tokens"])
-    self.context_window_var.set(INTERPRETER_SETTINGS["context_window"])
+    self.supports_vision_var.set(self.chat_ui.interpreter_settings["supports_vision"])
+    self.supports_functions_var.set(self.chat_ui.interpreter_settings["supports_functions"])
+    self.auto_run_var.set(self.chat_ui.interpreter_settings["auto_run"])
+    self.loop_var.set(self.chat_ui.interpreter_settings["loop"])
+    self.temperature_var.set(self.chat_ui.interpreter_settings["temperature"])
+    self.max_tokens_var.set(self.chat_ui.interpreter_settings["max_tokens"])
+    self.context_window_var.set(self.chat_ui.interpreter_settings["context_window"])
+    
+    # Load selected knowledge bases
+    for kb in self.kb_vars:
+        self.kb_vars[kb].set(kb in self.chat_ui.selected_kbs)
+    
+    # Load environment variables
+    for key, value in self.chat_ui.env_vars.items():
+        if key in self.env_vars:
+            self.env_vars[key].set(value)
 
   def save_settings(self):
-    new_use_knowledge = self.use_knowledge_var.get()
-    new_wake_word = self.wake_word_entry.get().strip()
-    new_selected_kbs = [kb for kb, var in self.kb_vars.items() if var.get()]
+    # Update ChatUI attributes
+    self.chat_ui.selected_kbs = [kb for kb, var in self.kb_vars.items() if var.get()]
+    self.chat_ui.wake_word = self.wake_word_entry.get().strip()
 
-    # Update ChatUI instance
-    self.chat_ui.use_knowledge = new_use_knowledge
-    self.chat_ui.selected_kbs = new_selected_kbs
-    self.chat_ui.wake_word = new_wake_word
-
-    # Update config file
-    config_path = os.path.join(os.path.dirname(__file__), "..", "Settings", "config.py")
-    with open(config_path, "r") as f:
-      config_content = f.read()
-
-    config_content = config_content.replace(f"USE_KNOWLEDGE = {USE_KNOWLEDGE}", f"USE_KNOWLEDGE = {new_use_knowledge}")
-    config_content = config_content.replace(f"DEFAULT_SELECTED_KBS = {json.dumps(DEFAULT_SELECTED_KBS)}", f"DEFAULT_SELECTED_KBS = {json.dumps(new_selected_kbs)}")
-    config_content = config_content.replace(f"WAKE_WORD = '{WAKE_WORD}'", f"WAKE_WORD = '{new_wake_word}'")
-
-    # Update INTERPRETER_SETTINGS
-    new_interpreter_settings = {
+    # Update interpreter settings through ChatUI
+    self.chat_ui.update_interpreter_settings({
       "supports_vision": self.supports_vision_var.get(),
       "supports_functions": self.supports_functions_var.get(),
       "auto_run": self.auto_run_var.get(),
       "loop": self.loop_var.get(),
       "temperature": self.temperature_var.get(),
       "max_tokens": self.max_tokens_var.get(),
-      "context_window": self.context_window_var.get(),
-    }
-    config_content = config_content.replace(f"INTERPRETER_SETTINGS = {json.dumps(INTERPRETER_SETTINGS, indent=4)}", f"INTERPRETER_SETTINGS = {json.dumps(new_interpreter_settings, indent=4)}")
+      "context_window": self.context_window_var.get()
+    })
 
-    with open(config_path, "w") as f:
-      f.write(config_content)
+    # Update environment variables
+    self.chat_ui.update_env_vars({key: var.get() for key, var in self.env_vars.items()})
 
-    # Save environment variables
-    for key, var in self.env_vars.items():
-      os.environ[key] = var.get()
-
-    # Update system message with environment variable names
-    custom_env_vars = [key for key in os.environ if key.startswith("CUSTOM_")]
-    env_var_message = "The following custom environment variables are available: " + ", ".join(custom_env_vars)
-    interpreter.system_message += f"\n\n{env_var_message}"
-
-    messagebox.showinfo("Settings Saved", "Settings have been updated successfully.")
+    # Notify the user
     self.window.destroy()
+    messagebox.showinfo("Settings Saved", "Your settings have been successfully updated.")
 
   def add_to_knowledge_base(self):
     kb_list = [d for d in os.listdir(KB_PATH) if os.path.isdir(os.path.join(KB_PATH, d))]

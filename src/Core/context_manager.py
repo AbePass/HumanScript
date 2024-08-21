@@ -7,7 +7,8 @@ import os
 from Settings.config import CHROMA_PATH
 
 class ContextManager:
-    def __init__(self):
+    def __init__(self, chat_ui):
+        self.chat_ui = chat_ui
         self.openai_key = os.environ["OPENAI_API_KEY"]
         self.embedding_function = OpenAIEmbeddings(openai_api_key=self.openai_key)
 
@@ -51,3 +52,7 @@ class ContextManager:
         sources = [f"{doc.metadata.get('source', 'Unknown')} (KB: {doc.metadata['knowledge_base']})" for doc in top_docs]
 
         return context, sources
+
+    def update_settings(self):
+        # This method can be used to refresh any settings if needed
+        pass

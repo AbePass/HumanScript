@@ -3,6 +3,7 @@ from tkinter import simpledialog, ttk, filedialog, messagebox
 import os
 import threading
 import logging
+import importlib
 from Settings.config import *
 from Core.chat_manager import ChatManager
 from Core.audio_manager import AudioManager
@@ -14,22 +15,23 @@ from UI.settings_window import SettingsWindow
 
 class ChatUI:
   def __init__(self, root):
-    self.use_knowledge = USE_KNOWLEDGE
     self.selected_kbs = DEFAULT_SELECTED_KBS.copy()
     self.wake_word = WAKE_WORD
     self.is_listening = False
     self.listen_thread = None
     self.is_voice_mode = False
     self.continuous_listen_thread = None
+    self.interpreter_settings = INTERPRETER_SETTINGS.copy()
+    self.env_vars = {k: v for k, v in os.environ.items() if k.startswith("CUSTOM_")}
 
     self.root = root
     self.root.title("OpenPI Chat")
 
-    self.chat_manager = ChatManager()
+    self.chat_manager = ChatManager(self)  # Pass self to ChatManager
     self.audio_manager = AudioManager()
     self.knowledge_manager = KnowledgeManager(self)
     self.interpreter_manager = InterpreterManager()
-    self.context_manager = ContextManager()
+    self.context_manager = ContextManager(self)  # Pass self to ContextManager
 
     self.create_chat_window()
     self.create_input_box()
@@ -55,8 +57,8 @@ class ChatUI:
       threading.Thread(target=self.process_response, args=(user_input,), daemon=True).start()
 
   def process_response(self, user_input):
-    response_generator, sources = self.chat_manager.process_input(user_input)
-
+    response_generator, sources = self.chat_manager.process_input(user_input, self.selected_kbs)
+    print(sources)
     self.chat_window.config(state=tk.NORMAL)
     self.chat_window.insert(tk.END, "Bot: ", "bot")
     
@@ -77,7 +79,7 @@ class ChatUI:
     final_response = interpreter.messages[-1]['content'] if interpreter.messages else full_response
     self.chat_window.insert(tk.END, final_response, "bot_final")
     
-    if self.use_knowledge and sources:
+    if sources:
         self.chat_window.insert(tk.END, "\nSources:\n" + "\n".join(sources) + "\n")
     
     self.chat_window.insert(tk.END, "\n\n")
@@ -123,7 +125,7 @@ class ChatUI:
   def continuous_listen(self):
     while self.audio_manager.is_listening:
         try:
-            wake_word_detected = self.audio_manager.listen_for_wake_word()
+            wake_word_detected = self.audio_manager.listen_for_wake_word(wake_word=self.wake_word)
             if wake_word_detected:
                 self.audio_manager.generate_beep()
                 self.chat_window.config(state=tk.NORMAL)
@@ -158,6 +160,9 @@ class ChatUI:
 
   def open_settings(self):
     SettingsWindow(self.root, self)
+    # After settings are saved, update the chat manager
+    self.chat_manager.update_selected_kbs(self.selected_kbs)###updated sucsessfully
+    self.chat_manager.update_wake_word(self.wake_word)
 
   def create_buttons(self):
     button_frame = tk.Frame(self.root)
@@ -171,3 +176,27 @@ class ChatUI:
     self.settings_button.pack(side=tk.LEFT, padx=5)
     self.interrupt_button = tk.Button(button_frame, text="Interrupt", command=self.toggle_mode)
     self.interrupt_button.pack(side=tk.LEFT, padx=5)
+
+  def update_interpreter_settings(self, new_settings):
+    self.interpreter_settings.update(new_settings)
+    # Update interpreter directly
+    interpreter.llm.supports_vision = new_settings["supports_vision"]
+    interpreter.llm.supports_functions = new_settings["supports_functions"]
+    interpreter.auto_run = new_settings["auto_run"]
+    interpreter.loop = new_settings["loop"]
+    interpreter.llm.temperature = new_settings["temperature"]
+    interpreter.llm.max_tokens = new_settings["max_tokens"]
+    interpreter.llm.context_window = new_settings["context_window"]
+    # Update ChatManager
+    self.chat_manager.update_interpreter_settings(self.interpreter_settings)
+
+  def update_env_vars(self, new_env_vars):
+    self.env_vars.update(new_env_vars)
+    for key, value in new_env_vars.items():
+      os.environ[key] = value
+    # Update system message
+    custom_env_vars = list(self.env_vars.keys())
+    env_var_message = "The following custom environment variables are available: " + ", ".join(custom_env_vars)
+    interpreter.system_message = interpreter.system_message.split("\n\n")[0] + f"\n\n{env_var_message}"
+    # Update ChatManager
+    self.chat_manager.update_env_vars(self.env_vars)

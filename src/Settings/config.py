@@ -36,6 +36,7 @@ Query: {query}
 ### Referencing and Searching:
 - If you need to refer to prior interactions, access the "conversation_history" folder.
 - For web-based queries, utilize the `computer.browser.search(query)` function as needed.
+- Only search the internet if there is no context provided.
 
 ### Communication Style:
 - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
@@ -54,13 +55,11 @@ TTS_SETTINGS = {
     "voice": "alloy"
 }
 
-# Knowledge base settings
-USE_KNOWLEDGE = True
 CHROMA_PATH = "src/Databases"
 KB_PATH = "Knowledge"
 
 # Default selected knowledge bases
-DEFAULT_SELECTED_KBS = []
+DEFAULT_SELECTED_KBS = ["new test", "openpi", "test"]
 
 # Audio settings
 BEEP_FREQUENCY = 440  # Frequency of the beep in Hz (A4 note)

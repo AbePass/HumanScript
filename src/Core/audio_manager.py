@@ -100,7 +100,7 @@ class AudioManager:
             pygame.mixer.music.stop()
             logging.info("Audio playback interrupted")
 
-    def listen_for_wake_word(self):
+    def listen_for_wake_word(self, wake_word):
         recognizer = sr.Recognizer()
         try:
             with sr.Microphone() as source:
@@ -108,7 +108,7 @@ class AudioManager:
                 audio = recognizer.listen(source, phrase_time_limit=3)
             text = recognizer.recognize_google(audio).lower()
             logging.info(f"Heard: {text}")
-            return self.wake_word in text
+            return wake_word in text
         except sr.UnknownValueError:
             return False
         except Exception as e:

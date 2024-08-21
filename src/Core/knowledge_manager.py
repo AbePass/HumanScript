@@ -5,7 +5,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 import os
-from Settings.config import CHROMA_PATH, KB_PATH
+from Settings.config import *
 # Load environment variables
 load_dotenv()
 
