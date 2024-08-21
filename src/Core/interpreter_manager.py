@@ -1,8 +1,9 @@
 import os
 import json
-from tkinter import simpledialog, messagebox
+import customtkinter as ctk
 from Settings.config import INTERPRETER_SETTINGS, SYSTEM_MESSAGE
 from interpreter import interpreter
+from tkinter import messagebox  # Import messagebox from tkinter
 
 class InterpreterManager:
   def __init__(self, chat_ui=None):

@@ -1,29 +1,109 @@
-import tkinter as tk
+import customtkinter as ctk
 from UI.chat_window import ChatUI
-from UI.provider_selection import ProviderSelectionUI
+from UI.provider_window import ProviderSelectionUI
 from Core.interpreter_manager import InterpreterManager
+from Settings.color_settings import *
+import logging
+import sys
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+print("Starting main.py")
+
+class MainApplication:
+    def __init__(self):
+        print("Initializing MainApplication")
+        self.root = ctk.CTk()
+        self.root.title("OpenPI Chat")
+        self.root.geometry("800x600")
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # Set custom color theme
+        self.set_custom_theme()
+
+        self.provider_ui = None
+        self.chat_ui = None
+        self.interpreter_manager = None
+
+    def set_custom_theme(self):
+        ctk.set_default_color_theme("dark-blue")  # Use a dark built-in theme as a base
+        
+        # Override specific colors for dark mode
+        ctk.ThemeManager.theme["CTk"]["fg_color"] = [get_color("BG_SECONDARY"), get_color("BG_PRIMARY")]
+        ctk.ThemeManager.theme["CTk"]["text"] = [get_color("TEXT_SECONDARY"), get_color("TEXT_PRIMARY")]
+        ctk.ThemeManager.theme["CTkButton"]["fg_color"] = [BRAND_PRIMARY, BRAND_SECONDARY]
+        ctk.ThemeManager.theme["CTkButton"]["hover_color"] = [BRAND_ACCENT, BRAND_ACCENT]
+        ctk.ThemeManager.theme["CTkButton"]["text_color"] = [get_color("TEXT_PRIMARY"), get_color("TEXT_PRIMARY")]
+        ctk.ThemeManager.theme["CTkEntry"]["fg_color"] = [get_color("BG_INPUT"), get_color("BG_INPUT")]
+        ctk.ThemeManager.theme["CTkEntry"]["text_color"] = [get_color("TEXT_SECONDARY"), get_color("TEXT_PRIMARY")]
+        ctk.ThemeManager.theme["CTkEntry"]["border_color"] = [BRAND_PRIMARY, BRAND_SECONDARY]
+        ctk.ThemeManager.theme["CTkTextbox"]["fg_color"] = [get_color("BG_INPUT"), get_color("BG_INPUT")]
+        ctk.ThemeManager.theme["CTkTextbox"]["text_color"] = [get_color("TEXT_SECONDARY"), get_color("TEXT_PRIMARY")]
+        ctk.ThemeManager.theme["CTkTextbox"]["border_color"] = [BRAND_PRIMARY, BRAND_SECONDARY]
+
+    def start(self):
+        print("Starting MainApplication")
+        logging.debug("Starting MainApplication")
+        self.show_provider_selection()
+
+    def show_provider_selection(self):
+        print("Showing provider selection")
+        logging.debug("Showing provider selection")
+        self.provider_ui = ProviderSelectionUI(self.root)
+        self.provider_ui.create_provider_selection_ui()
+        self.root.wait_window(self.provider_ui.window)
+        self.process_provider_selection()
+
+    def process_provider_selection(self):
+        print("Processing provider selection")
+        logging.debug("Processing provider selection")
+        provider = self.provider_ui.provider
+        config = self.provider_ui.get_config()
+
+        if provider and config:
+            self.interpreter_manager = InterpreterManager()
+            self.interpreter_manager.configure_provider(provider, config)
+            self.show_chat_ui()
+        else:
+            print("No provider selected or configuration incomplete. Exiting...")
+            logging.error("No provider selected or configuration incomplete. Exiting...")
+            self.root.quit()
+
+    def show_chat_ui(self):
+        print("Showing chat UI")
+        logging.debug("Showing chat UI")
+        self.root.deiconify()  # Show the main window
+        try:
+            self.chat_ui = ChatUI(self.root)
+            self.chat_ui.interpreter_manager = self.interpreter_manager
+            print("Chat UI created, starting mainloop")
+            logging.debug("Chat UI created, starting mainloop")
+            self.root.mainloop()
+        except Exception as e:
+            print(f"Error creating ChatUI: {e}")
+            logging.exception("Error creating ChatUI")
+            self.root.quit()
+
+    def on_closing(self):
+        print("Closing application")
+        logging.debug("Closing application")
+        self.root.quit()
 
 def main():
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window while selecting provider
-
-    provider_ui = ProviderSelectionUI(root)
-    provider_ui.create_provider_selection_ui()
-    root.wait_window(provider_ui.window)  # Wait for the provider selection window to close
-
-    provider = provider_ui.provider
-    config = provider_ui.get_config()
-
-    if provider and config:
-        interpreter_manager = InterpreterManager()
-        interpreter_manager.configure_provider(provider, config)
-
-        root.deiconify()  # Show the main window after provider selection
-        chat_ui = ChatUI(root)
-        chat_ui.interpreter_manager = interpreter_manager  # Set the interpreter_manager
-        root.mainloop()
-    else:
-        print("No provider selected or configuration incomplete. Exiting...")
+    print("Setting up appearance and color theme")
+    logging.debug("Setting up appearance and color theme")
+    ctk.set_appearance_mode("Dark")  # Set appearance mode to Dark
+    app = MainApplication()
+    app.start()
 
 if __name__ == "__main__":
-    main()
+    print("Starting main function")
+    logging.debug("Starting main function")
+    try:
+        main()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        logging.exception("An error occurred")
+
+print("End of main.py")
