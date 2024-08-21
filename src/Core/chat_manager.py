@@ -40,7 +40,7 @@ class ChatManager:
           print(f"Querying selected knowledge bases: {selected_kbs}")
           context_text, sources = self.context_manager.query_vector_database(user_input, selected_kbs)
       else:
-          context_text, sources = None
+          context_text, sources = None, []
 
       response_generator = self.get_interpreter_response(context_text, user_input)
 
