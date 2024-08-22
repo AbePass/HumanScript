@@ -2,7 +2,7 @@ import customtkinter as ctk
 import os
 import threading
 import logging
-import importlib
+from datetime import datetime
 from Settings.config import *
 from Core.chat_manager import ChatManager
 from Core.audio_manager import AudioManager
@@ -12,6 +12,14 @@ from Core.context_manager import ContextManager
 from interpreter import interpreter
 from UI.settings_window import SettingsWindow
 from Settings.color_settings import *
+import re
+
+def sanitize_filename(filename):
+    # Remove or replace invalid characters
+    sanitized = re.sub(r'[\\/*?:"<>|\n\r\t]', '', filename)
+    sanitized = re.sub(r'\s+', '_', sanitized)  # Replace whitespace with underscore
+    sanitized = sanitized.strip('._')  # Remove leading/trailing dots and underscores
+    return sanitized or 'unnamed_conversation'  # Default name if empty
 
 class ChatUI:
     def __init__(self, root):
@@ -36,6 +44,8 @@ class ChatUI:
         self.interpreter_manager = InterpreterManager()
         self.context_manager = ContextManager(self)
 
+        self.input_box = ctk.CTkTextbox(root, height=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
+        
         self.create_ui()
 
     def create_ui(self):
@@ -77,8 +87,7 @@ class ChatUI:
         self.chat_window.configure(yscrollcommand=scrollbar.set)
 
     def create_input_box(self, parent):
-        logging.debug("Creating input box")
-        self.input_box = ctk.CTkTextbox(parent, height=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
+        logging.debug("Placing input box")
         self.input_box.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
 
     def create_buttons(self, parent):
@@ -121,6 +130,14 @@ class ChatUI:
             if not self.is_voice_mode:
                 self.input_box.delete("1.0", ctk.END)
             
+            # Modify the filename generation for the interpreter
+            timestamp = datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
+            sanitized_query = sanitize_filename(user_input[:50])  # Limit to first 50 characters
+            filename = f"Context_{sanitized_query}_{timestamp}.json"
+            
+            # Set the custom filename for the interpreter
+            interpreter.conversation_filename = filename
+            
             # Start a new thread for processing the response
             threading.Thread(target=self.process_response, args=(user_input,), daemon=True).start()
 
@@ -140,15 +157,19 @@ class ChatUI:
         stream_start = self.chat_window.index(ctk.END)
         full_response = ""
 
-        for message in response_generator:
-            if isinstance(message, dict) and 'content' in message:
-                content = message['content']
-                if content is not None:
-                    content = str(content)
-                    full_response += content
-                    self.chat_window.insert(ctk.END, content, "bot_stream")
-                    self.chat_window.see(ctk.END)
-                    self.root.update_idletasks()
+        try:
+            for message in response_generator:
+                if isinstance(message, dict) and 'content' in message:
+                    content = message['content']
+                    if content is not None:
+                        content = str(content)
+                        full_response += content
+                        self.chat_window.insert(ctk.END, content, "bot_stream")
+                        self.chat_window.see(ctk.END)
+                        self.root.update_idletasks()
+        except Exception as e:
+            print(f"Error processing response: {e}")
+            logging.exception("Error processing response")
 
         # Get the final response from the last message
         final_response = interpreter.messages[-1]['content'] if interpreter.messages else full_response
@@ -182,16 +203,17 @@ class ChatUI:
         self.is_voice_mode = not self.is_voice_mode
         if self.is_voice_mode:
             self.mode_button.configure(text="Switch to Text Mode")
-            self.input_box.pack_forget()
+            self.input_box.grid_remove()
             self.send_button.pack_forget()
             self.speak_button.pack(side=ctk.LEFT, padx=5)
             self.start_continuous_listening()
         else:
             self.mode_button.configure(text="Switch to Voice Mode")
             self.speak_button.pack_forget()
-            self.input_box.pack(padx=10, pady=10, fill=ctk.X, expand=False)
+            self.input_box.grid()
             self.send_button.pack(side=ctk.LEFT, padx=5)
             self.stop_continuous_listening()
+        self.input_box.configure(state="normal" if not self.is_voice_mode else "disabled")
 
     def start_continuous_listening(self):
         self.audio_manager.is_listening = True
@@ -212,7 +234,7 @@ class ChatUI:
                 if wake_word_detected:
                     self.audio_manager.generate_beep()
                     self.chat_window.configure(state="normal")
-                    self.add_message("Listening...\n", is_user=False)
+                    self.chat_window.insert(ctk.END, "Listening...\n", "bot_stream")
                     self.chat_window.configure(state="disabled")
                     self.chat_window.yview(ctk.END)
                     self.process_speech_input()
