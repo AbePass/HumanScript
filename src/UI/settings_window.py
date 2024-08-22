@@ -81,6 +81,17 @@ class SettingsWindow:
     ctk.CTkButton(button_frame, text="Cancel", command=self.window.destroy, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(side=ctk.LEFT)
     ctk.CTkButton(button_frame, text="Reset Chat", command=self.chat_ui.reset_chat, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(side=ctk.LEFT, padx=10)
     ctk.CTkButton(button_frame, text="Add to Knowledge Base", command=self.add_to_knowledge_base, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(side=ctk.LEFT)
+    
+    # Add a new button for rebuilding knowledge bases
+    rebuild_kb_button = ctk.CTkButton(
+        button_frame,
+        text="Rebuild Knowledge Bases",
+        command=self.rebuild_knowledge_bases,
+        fg_color=BRAND_PRIMARY,
+        text_color=get_color("TEXT_PRIMARY"),
+        hover_color=BRAND_ACCENT
+    )
+    rebuild_kb_button.pack(side=ctk.LEFT, padx=10)
 
   def refresh_kb_list(self, kb_frame):
     for widget in kb_frame.winfo_children():
@@ -235,3 +246,25 @@ class SettingsWindow:
     content_window.transient(self.window)
     content_window.grab_set()
     self.window.wait_window(content_window)
+
+  def rebuild_knowledge_bases(self):
+    # Disable the button while rebuilding
+    rebuild_button = self.window.nametowidget("!ctkframe5.!ctkbutton4")
+    rebuild_button.configure(state="disabled", text="Rebuilding...")
+    
+    # Schedule the rebuilding process
+    self.window.after(100, self.perform_rebuild, rebuild_button)
+
+  def perform_rebuild(self, rebuild_button):
+    try:
+        # Rebuild all knowledge bases
+        self.knowledge_manager.build_vector_database()
+        messagebox.showinfo("Success", "Knowledge bases have been rebuilt successfully!")
+    except Exception as e:
+        messagebox.showerror("Error", f"An error occurred while rebuilding knowledge bases: {str(e)}")
+    finally:
+        # Re-enable the button
+        rebuild_button.configure(state="normal", text="Rebuild Knowledge Bases")
+        
+        # Refresh the KB list to reflect any changes
+        self.refresh_kb_list(self.window.children['!ctkframe2'])

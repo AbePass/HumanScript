@@ -11,7 +11,6 @@ class InterpreterManager:
     self.configure_interpreter()
 
   def configure_interpreter(self):
-    interpreter.system_message = SYSTEM_MESSAGE
     interpreter.llm.supports_vision = INTERPRETER_SETTINGS["supports_vision"]
     interpreter.llm.supports_functions = INTERPRETER_SETTINGS["supports_functions"]
     interpreter.auto_run = INTERPRETER_SETTINGS["auto_run"]
@@ -21,6 +20,7 @@ class InterpreterManager:
     interpreter.llm.context_window = INTERPRETER_SETTINGS["context_window"]
     interpreter.conversation_history_path = INTERPRETER_SETTINGS["conversation_history_path"]
     interpreter.computer.import_computer_api = INTERPRETER_SETTINGS["import_computer_api"]
+    interpreter.system_message = SYSTEM_MESSAGE
 
   def configure_provider(self, provider, config):
     # Common for all providers
