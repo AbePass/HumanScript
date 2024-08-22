@@ -118,7 +118,7 @@ class ChatUI:
         rebuild_kb_button = ctk.CTkButton(
             self.sidebar, 
             text="🔄 Rebuild KBs", 
-            command=self.knowledge_manager.build_vector_database, 
+            command=self.rebuild_knowledge_bases, 
             fg_color=get_color("BG_INPUT"), 
             text_color=BRAND_PRIMARY, 
             hover_color=BRAND_ACCENT, 
@@ -435,3 +435,7 @@ class ChatUI:
 
         # Recreate sidebar with updated knowledge bases
         self.create_sidebar()
+
+    def rebuild_knowledge_bases(self):
+        self.knowledge_manager.build_vector_database()
+        self.update_sidebar()
