@@ -84,6 +84,48 @@ class ChatUI:
             toggle.pack(anchor="w", pady=2)
             self.kb_toggles[kb] = toggle
 
+        # Add settings icon to the sidebar
+        settings_icon = ctk.CTkButton(
+            self.sidebar, 
+            text="⚙️ Settings", 
+            command=self.open_settings, 
+            fg_color=get_color("BG_INPUT"), 
+            text_color=BRAND_PRIMARY, 
+            hover_color=BRAND_ACCENT, 
+            border_width=2, 
+            border_color=BRAND_PRIMARY,
+            font=("Helvetica", 16)
+        )
+        settings_icon.pack(pady=10, padx=20, fill="x")
+
+        # Add "Add to Knowledge Base" button to the sidebar
+        add_kb_button = ctk.CTkButton(
+            self.sidebar, 
+            text="➕ Add to KB", 
+            command=self.add_to_knowledge_base, 
+            fg_color=get_color("BG_INPUT"), 
+            text_color=BRAND_PRIMARY, 
+            hover_color=BRAND_ACCENT, 
+            border_width=2, 
+            border_color=BRAND_PRIMARY,
+            font=("Helvetica", 16)
+        )
+        add_kb_button.pack(pady=10, padx=20, fill="x")
+
+        # Add "Rebuild Knowledge Bases" button to the sidebar
+        rebuild_kb_button = ctk.CTkButton(
+            self.sidebar, 
+            text="🔄 Rebuild KBs", 
+            command=self.rebuild_knowledge_bases, 
+            fg_color=get_color("BG_INPUT"), 
+            text_color=BRAND_PRIMARY, 
+            hover_color=BRAND_ACCENT, 
+            border_width=2, 
+            border_color=BRAND_PRIMARY,
+            font=("Helvetica", 16)
+        )
+        rebuild_kb_button.pack(pady=10, padx=20, fill="x")
+
     def create_chat_window(self, parent):
         logging.debug("Creating chat window")
         chat_frame = ctk.CTkFrame(parent, fg_color=get_color("BG_TERTIARY"))
@@ -170,7 +212,7 @@ class ChatUI:
             self.selected_kbs.append(kb)
         else:
             self.selected_kbs.remove(kb)
-        self.interpreter_manager.update_selected_kbs(self.selected_kbs)
+        self.knowledge_manager.update_selected_kbs(self.selected_kbs)
 
     def send_message(self, user_input=None):
         if not self.is_voice_mode:
@@ -256,7 +298,10 @@ class ChatUI:
         self.chat_window.configure(state="disabled")
 
     def open_settings(self):
-        SettingsWindow(self.root, self)
+        # Clear the main frame and display settings
+        for widget in self.main_frame.winfo_children():
+            widget.destroy()
+        SettingsWindow(self.main_frame, self)
         # After settings are saved, update the chat manager
         self.chat_manager.update_selected_kbs(self.selected_kbs)
         self.chat_manager.update_wake_word(self.wake_word)
@@ -284,3 +329,11 @@ class ChatUI:
         interpreter.system_message = interpreter.system_message.split("\n\n")[0] + f"\n\n{env_var_message}"
         # Update ChatManager
         self.chat_manager.update_env_vars(self.env_vars)
+
+    def add_to_knowledge_base(self):
+        # Implement the functionality to add to knowledge base
+        pass
+
+    def rebuild_knowledge_bases(self):
+        # Implement the functionality to rebuild knowledge bases
+        pass

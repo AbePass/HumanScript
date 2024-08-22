@@ -13,96 +13,82 @@ class SettingsWindow:
   def __init__(self, parent, chat_ui):
     self.parent = parent
     self.chat_ui = chat_ui
-    self.window = ctk.CTkToplevel(parent)
-    self.window.title("Settings")
-    self.window.geometry("600x800")
-    self.window.resizable(True, True)
-    self.window.configure(fg_color=get_color("BG_PRIMARY"))
-
-    self.knowledge_manager = KnowledgeManager(self.window)
-
     self.create_widgets()
     self.load_current_settings()
 
   def create_widgets(self):
+    # Create a scrollable frame for settings
+    self.scrollable_frame = ctk.CTkScrollableFrame(self.parent, fg_color=get_color("BG_PRIMARY"))
+    self.scrollable_frame.pack(padx=10, pady=10, fill="both", expand=True)
+
     # Interpreter Settings
-    interpreter_frame = ctk.CTkFrame(self.window, fg_color=get_color("BG_TERTIARY"))
-    interpreter_frame.pack(padx=10, pady=5, fill=ctk.X)
-
-    self.supports_vision_var = ctk.BooleanVar()
-    ctk.CTkCheckBox(interpreter_frame, text="Supports Vision", variable=self.supports_vision_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-
-    self.supports_functions_var = ctk.BooleanVar()
-    ctk.CTkCheckBox(interpreter_frame, text="Supports Functions", variable=self.supports_functions_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-
-    self.auto_run_var = ctk.BooleanVar()
-    ctk.CTkCheckBox(interpreter_frame, text="Auto Run", variable=self.auto_run_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-
-    self.loop_var = ctk.BooleanVar()
-    ctk.CTkCheckBox(interpreter_frame, text="Loop", variable=self.loop_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-
-    ctk.CTkLabel(interpreter_frame, text="Temperature:", text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-    self.temperature_var = ctk.DoubleVar()
-    ctk.CTkEntry(interpreter_frame, textvariable=self.temperature_var, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-
-    ctk.CTkLabel(interpreter_frame, text="Max Tokens:", text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-    self.max_tokens_var = ctk.IntVar()
-    ctk.CTkEntry(interpreter_frame, textvariable=self.max_tokens_var, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-
-    ctk.CTkLabel(interpreter_frame, text="Context Window:", text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
-    self.context_window_var = ctk.IntVar()
-    ctk.CTkEntry(interpreter_frame, textvariable=self.context_window_var, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(pady=2)
+    self.create_collapsible_section("Interpreter Settings", self.create_interpreter_settings)
 
     # Wake Word
-    ctk.CTkLabel(self.window, text="Wake Word:", text_color=get_color("TEXT_PRIMARY")).pack(pady=5)
-    self.wake_word_entry = ctk.CTkEntry(self.window, width=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
-    self.wake_word_entry.pack(pady=5)
-
-    # Knowledge Bases
-    kb_frame = ctk.CTkFrame(self.window, fg_color=get_color("BG_TERTIARY"))
-    kb_frame.pack(padx=10, pady=5, fill=ctk.X)
-
-    self.kb_vars = {}
-    self.refresh_kb_list(kb_frame)
+    self.create_collapsible_section("Wake Word", self.create_wake_word_settings)
 
     # Environment Variables
-    env_frame = ctk.CTkFrame(self.window, fg_color=get_color("BG_TERTIARY"))
-    env_frame.pack(padx=10, pady=5, fill=ctk.X)
-
-    self.env_vars = {}
-    self.refresh_env_vars(env_frame)
-
-    ctk.CTkButton(env_frame, text="Add Environment Variable", command=self.add_env_var, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(pady=5)
+    self.create_collapsible_section("Environment Variables", self.create_env_var_settings)
 
     # Buttons
-    button_frame = ctk.CTkFrame(self.window, fg_color=get_color("BG_PRIMARY"))
-    button_frame.pack(pady=20)
-    ctk.CTkButton(button_frame, text="Save", command=self.save_settings, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(side=ctk.LEFT, padx=10)
-    ctk.CTkButton(button_frame, text="Cancel", command=self.window.destroy, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(side=ctk.LEFT)
-    ctk.CTkButton(button_frame, text="Reset Chat", command=self.chat_ui.reset_chat, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(side=ctk.LEFT, padx=10)
-    ctk.CTkButton(button_frame, text="Add to Knowledge Base", command=self.add_to_knowledge_base, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT).pack(side=ctk.LEFT)
-    
-    # Add a new button for rebuilding knowledge bases
-    rebuild_kb_button = ctk.CTkButton(
-        button_frame,
-        text="Rebuild Knowledge Bases",
-        command=self.rebuild_knowledge_bases,
-        fg_color=BRAND_PRIMARY,
-        text_color=get_color("TEXT_PRIMARY"),
-        hover_color=BRAND_ACCENT
-    )
-    rebuild_kb_button.pack(side=ctk.LEFT, padx=10)
+    button_frame = ctk.CTkFrame(self.scrollable_frame, fg_color=get_color("BG_PRIMARY"))
+    button_frame.pack(pady=20, anchor="w")
+    ctk.CTkButton(button_frame, text="Save", command=self.save_settings, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side=ctk.LEFT, padx=10)
+    ctk.CTkButton(button_frame, text="Cancel", command=self.cancel, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side=ctk.LEFT)
 
-  def refresh_kb_list(self, kb_frame):
-    for widget in kb_frame.winfo_children():
-      widget.destroy()
+  def create_collapsible_section(self, title, create_content_func):
+    section_frame = ctk.CTkFrame(self.scrollable_frame, fg_color=get_color("BG_TERTIARY"))
+    section_frame.pack(padx=10, pady=5, fill="x", anchor="w")
 
-    kb_list = [d for d in os.listdir(CHROMA_PATH) if os.path.isdir(os.path.join(CHROMA_PATH, d))]
+    section_button = ctk.CTkButton(section_frame, text=title, command=lambda: self.toggle_section(section_content), fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY"), border_width=2, border_color=get_color("TEXT_PRIMARY"), font=("Helvetica", 16))
+    section_button.pack(fill="x")
 
-    for i, kb in enumerate(kb_list):
-      self.kb_vars[kb] = ctk.BooleanVar(value=kb in self.chat_ui.selected_kbs)
-      cb = ctk.CTkCheckBox(kb_frame, text=kb, variable=self.kb_vars[kb], text_color=get_color("TEXT_PRIMARY"))
-      cb.pack(anchor=ctk.W, padx=5, pady=2)
+    section_content = ctk.CTkFrame(section_frame, fg_color=get_color("BG_PRIMARY"))
+    section_content.pack(fill="x", expand=True, anchor="w")
+    create_content_func(section_content)
+    section_content.pack_forget()
+
+  def toggle_section(self, section_content):
+    if section_content.winfo_ismapped():
+      section_content.pack_forget()
+    else:
+      section_content.pack(fill="x", expand=True, anchor="w")
+
+  def create_interpreter_settings(self, parent):
+    self.supports_vision_var = ctk.BooleanVar()
+    ctk.CTkCheckBox(parent, text="Supports Vision", variable=self.supports_vision_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
+    self.supports_functions_var = ctk.BooleanVar()
+    ctk.CTkCheckBox(parent, text="Supports Functions", variable=self.supports_functions_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
+    self.auto_run_var = ctk.BooleanVar()
+    ctk.CTkCheckBox(parent, text="Auto Run", variable=self.auto_run_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
+    self.loop_var = ctk.BooleanVar()
+    ctk.CTkCheckBox(parent, text="Loop", variable=self.loop_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
+    ctk.CTkLabel(parent, text="Temperature:", text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+    self.temperature_var = ctk.DoubleVar()
+    ctk.CTkEntry(parent, textvariable=self.temperature_var, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
+    ctk.CTkLabel(parent, text="Max Tokens:", text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+    self.max_tokens_var = ctk.IntVar()
+    ctk.CTkEntry(parent, textvariable=self.max_tokens_var, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
+    ctk.CTkLabel(parent, text="Context Window:", text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+    self.context_window_var = ctk.IntVar()
+    ctk.CTkEntry(parent, textvariable=self.context_window_var, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
+  def create_wake_word_settings(self, parent):
+    ctk.CTkLabel(parent, text="Wake Word:", text_color=get_color("TEXT_PRIMARY")).pack(pady=5, anchor="w")
+    self.wake_word_entry = ctk.CTkEntry(parent, width=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
+    self.wake_word_entry.pack(pady=5, anchor="w")
+
+  def create_env_var_settings(self, parent):
+    self.env_vars = {}
+    self.refresh_env_vars(parent)
+
+    ctk.CTkButton(parent, text="Add Environment Variable", command=self.add_env_var, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(pady=5, anchor="w")
 
   def refresh_env_vars(self, env_frame):
     for widget in env_frame.winfo_children():
@@ -112,7 +98,7 @@ class SettingsWindow:
       if key.startswith("CUSTOM_"):
         self.env_vars[key] = ctk.StringVar(value=value)
         row_frame = ctk.CTkFrame(env_frame, fg_color=get_color("BG_TERTIARY"))
-        row_frame.pack(fill=ctk.X, padx=5, pady=2)
+        row_frame.pack(fill=ctk.X, padx=5, pady=2, anchor="w")
         ctk.CTkLabel(row_frame, text=key, text_color=get_color("TEXT_PRIMARY")).pack(side=ctk.LEFT)
         ctk.CTkEntry(row_frame, textvariable=self.env_vars[key], show="*", fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(side=ctk.RIGHT, expand=True, fill=ctk.X)
 
@@ -124,9 +110,9 @@ class SettingsWindow:
       if value:
         os.environ[key] = value
         self.env_vars[key] = ctk.StringVar(value=value)
-        env_frame = self.window.children['!ctkframe3']
+        env_frame = self.parent.children['!ctkframe3']
         row_frame = ctk.CTkFrame(env_frame, fg_color=get_color("BG_TERTIARY"))
-        row_frame.pack(fill=ctk.X, padx=5, pady=2)
+        row_frame.pack(fill=ctk.X, padx=5, pady=2, anchor="w")
         ctk.CTkLabel(row_frame, text=key, text_color=get_color("TEXT_PRIMARY")).pack(side=ctk.LEFT)
         ctk.CTkEntry(row_frame, textvariable=self.env_vars[key], show="*", fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(side=ctk.RIGHT, expand=True, fill=ctk.X)
 
@@ -141,10 +127,6 @@ class SettingsWindow:
     self.max_tokens_var.set(self.chat_ui.interpreter_settings["max_tokens"])
     self.context_window_var.set(self.chat_ui.interpreter_settings["context_window"])
     
-    # Load selected knowledge bases
-    for kb in self.kb_vars:
-        self.kb_vars[kb].set(kb in self.chat_ui.selected_kbs)
-    
     # Load environment variables
     for key, value in self.chat_ui.env_vars.items():
         if key in self.env_vars:
@@ -152,7 +134,6 @@ class SettingsWindow:
 
   def save_settings(self):
     # Update ChatUI attributes
-    self.chat_ui.selected_kbs = [kb for kb, var in self.kb_vars.items() if var.get()]
     self.chat_ui.wake_word = self.wake_word_entry.get().strip()
 
     # Update interpreter settings through ChatUI
@@ -170,101 +151,17 @@ class SettingsWindow:
     self.chat_ui.update_env_vars({key: var.get() for key, var in self.env_vars.items()})
 
     # Notify the user
-    self.window.destroy()
     messagebox.showinfo("Settings Saved", "Your settings have been successfully updated.")
+    # Return to chat window
+    self.return_to_chat()
 
-  def add_to_knowledge_base(self):
-    kb_list = [d for d in os.listdir(KB_PATH) if os.path.isdir(os.path.join(KB_PATH, d))]
-    
-    kb_window = ctk.CTkToplevel(self.window)
-    kb_window.title("Add to Knowledge Base")
-    kb_window.geometry("300x150")
-    kb_window.configure(fg_color=get_color("BG_PRIMARY"))
-    
-    def select_existing_kb():
-      kb_name = kb_var.get()
-      kb_window.destroy()
-      self.add_content_to_kb(kb_name)
-    
-    def create_new_kb():
-      new_kb_name = simpledialog.askstring("New Knowledge Base", "Enter name for new knowledge base:")
-      if new_kb_name:
-        new_kb_path = os.path.join(KB_PATH, new_kb_name)
-        os.makedirs(os.path.join(new_kb_path, "docs"), exist_ok=True)
-        with open(os.path.join(new_kb_path, "urls.txt"), 'w') as f:
-          pass  # Create empty urls.txt file
-        kb_window.destroy()
-        self.add_content_to_kb(new_kb_name)
-    
-    kb_var = ctk.StringVar()
-    kb_dropdown = ctk.CTkComboBox(kb_window, textvariable=kb_var, values=kb_list, state="readonly", fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
-    kb_dropdown.set("Select knowledge base")
-    kb_dropdown.pack(pady=10)
-    
-    select_button = ctk.CTkButton(kb_window, text="Select Existing KB", command=select_existing_kb, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT)
-    select_button.pack(pady=5)
-    
-    create_button = ctk.CTkButton(kb_window, text="Create New KB", command=create_new_kb, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT)
-    create_button.pack(pady=5)
-    
-    kb_window.transient(self.window)
-    kb_window.grab_set()
-    self.window.wait_window(kb_window)
+  def cancel(self):
+    # Return to chat window
+    self.return_to_chat()
 
-  def add_content_to_kb(self, kb_name):
-    content_window = ctk.CTkToplevel(self.window)
-    content_window.title(f"Add to {kb_name}")
-    content_window.geometry("300x150")
-    content_window.configure(fg_color=get_color("BG_PRIMARY"))
-    
-    def add_file():
-      file_path = filedialog.askopenfilename()
-      if file_path:
-        dest_path = os.path.join(KB_PATH, kb_name, "docs", os.path.basename(file_path))
-        shutil.copy2(file_path, dest_path)
-        update_kb()
-    
-    def add_url():
-      url = simpledialog.askstring("Add URL", "Enter URL to add:")
-      if url:
-        with open(os.path.join(KB_PATH, kb_name, "urls.txt"), 'a') as f:
-          f.write(url + '\n')
-        update_kb()
-    
-    def update_kb():
-      content_window.destroy()
-      self.knowledge_manager.build_vector_database(kb_name)
-      messagebox.showinfo("Success", f"Knowledge base '{kb_name}' updated successfully!")
-      self.refresh_kb_list(self.window.children['!ctkframe2'])
-    
-    file_button = ctk.CTkButton(content_window, text="Add File", command=add_file, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT)
-    file_button.pack(pady=10)
-    
-    url_button = ctk.CTkButton(content_window, text="Add URL", command=add_url, fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), hover_color=BRAND_ACCENT)
-    url_button.pack(pady=10)
-    
-    content_window.transient(self.window)
-    content_window.grab_set()
-    self.window.wait_window(content_window)
-
-  def rebuild_knowledge_bases(self):
-    # Disable the button while rebuilding
-    rebuild_button = self.window.nametowidget("!ctkframe5.!ctkbutton4")
-    rebuild_button.configure(state="disabled", text="Rebuilding...")
-    
-    # Schedule the rebuilding process
-    self.window.after(100, self.perform_rebuild, rebuild_button)
-
-  def perform_rebuild(self, rebuild_button):
-    try:
-        # Rebuild all knowledge bases
-        self.knowledge_manager.build_vector_database()
-        messagebox.showinfo("Success", "Knowledge bases have been rebuilt successfully!")
-    except Exception as e:
-        messagebox.showerror("Error", f"An error occurred while rebuilding knowledge bases: {str(e)}")
-    finally:
-        # Re-enable the button
-        rebuild_button.configure(state="normal", text="Rebuild Knowledge Bases")
-        
-        # Refresh the KB list to reflect any changes
-        self.refresh_kb_list(self.window.children['!ctkframe2'])
+  def return_to_chat(self):
+    # Clear the settings UI and recreate the chat window
+    for widget in self.parent.winfo_children():
+      widget.destroy()
+    self.chat_ui.create_chat_window(self.parent)
+    self.chat_ui.create_input_area(self.parent)
