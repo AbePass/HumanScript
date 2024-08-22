@@ -13,7 +13,6 @@ print("Starting main.py")
 
 class MainApplication:
     def __init__(self):
-        print("Initializing MainApplication")
         self.root = ctk.CTk()
         self.root.title("OpenPI Chat")
         self.root.geometry("1280x720")  # 16:9 aspect ratio
@@ -48,13 +47,9 @@ class MainApplication:
         ctk.ThemeManager.theme["CTkScrollableFrame"]["fg_color"] = [get_color("BG_SECONDARY"), get_color("BG_PRIMARY")]
 
     def start(self):
-        print("Starting MainApplication")
-        logging.debug("Starting MainApplication")
         self.show_provider_selection()
 
     def show_provider_selection(self):
-        print("Showing provider selection")
-        logging.debug("Showing provider selection")
         self.provider_ui = ProviderSelectionUI(self.root)
         self.provider_ui.create_provider_selection_ui()
         self.root.wait_window(self.provider_ui.window)
@@ -71,13 +66,9 @@ class MainApplication:
             self.interpreter_manager.configure_provider(provider, config)
             self.show_chat_ui()
         else:
-            print("No provider selected or configuration incomplete. Exiting...")
-            logging.error("No provider selected or configuration incomplete. Exiting...")
             self.root.quit()
 
     def show_chat_ui(self):
-        print("Showing chat UI")
-        logging.debug("Showing chat UI")
         self.root.deiconify()  # Show the main window
         try:
             self.chat_ui = ChatUI(self.root, self.interpreter_manager)
@@ -95,8 +86,6 @@ class MainApplication:
         self.root.quit()
 
 def main():
-    print("Setting up appearance and color theme")
-    logging.debug("Setting up appearance and color theme")
     ctk.set_appearance_mode("Dark")  # Set appearance mode to Dark
     app = MainApplication()
     app.start()
@@ -109,5 +98,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An error occurred: {e}")
         logging.exception("An error occurred")
-
-print("End of main.py")

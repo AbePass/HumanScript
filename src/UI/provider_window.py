@@ -27,25 +27,16 @@ class ProviderSelectionUI:
     self.continue_button = ctk.CTkButton(self.window, text="Continue", command=self.show_credential_inputs, state="disabled", fg_color="#9755FF", text_color="#FFFFFF", hover_color="#FFAA3B")
     self.continue_button.pack(pady=10)
 
-    self.debug_label = ctk.CTkLabel(self.window, text="Debug: No provider selected", text_color=["#F4F4F4", "#FFFFFF"])
-    self.debug_label.pack(pady=10)
-
-    # Add a manual refresh button for testing
-    ctk.CTkButton(self.window, text="Refresh UI", command=self.refresh_ui, fg_color="#9755FF", text_color="#FFFFFF", hover_color="#FFAA3B").pack(pady=10)
-
   def on_provider_changed(self, *args):
     print(f"Provider changed to: {self.provider_var.get()}")  # Debug print
     self.refresh_ui()
 
   def refresh_ui(self):
     selected_provider = self.provider_var.get()
-    print(f"Refreshing UI. Selected provider: {selected_provider}")  # Debug print
     if selected_provider:
       self.continue_button.configure(state="normal")
-      self.debug_label.configure(text=f"Debug: Selected {selected_provider}", text_color=["#F4F4F4", "#FFFFFF"])
     else:
       self.continue_button.configure(state="disabled")
-      self.debug_label.configure(text="Debug: No provider selected", text_color=["#F4F4F4", "#FFFFFF"])
 
   def show_credential_inputs(self):
     print("show_credential_inputs called")  # Debug print
