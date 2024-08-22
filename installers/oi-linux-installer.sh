@@ -12,7 +12,7 @@ python3 -m venv opai
 source opai/bin/activate
 
 # Install the necessary packages
-pip install open-interpreter tk pillow speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb openai pygame python-dotenv unstructured unstructured[md] unstructured[pdf] unstructured[py]
+pip install open-interpreter tk pillow speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb openai pygame python-dotenv unstructured unstructured[md] unstructured[pdf] customtkinter
 
 # Install system dependencies
 sudo apt-get update
