@@ -6,6 +6,9 @@ from langchain_community.vectorstores import Chroma
 from dotenv import load_dotenv
 import os
 from Settings.config import *
+import logging
+import shutil
+
 # Load environment variables
 load_dotenv()
 
@@ -113,3 +116,25 @@ class KnowledgeManager:
             for kb in knowledge_bases:
                 print(f"Processing knowledge base: {kb}")
                 self.load_docs_folder(kb)
+
+    def add_to_knowledge_base(self, kb_name, url=None, file_path=None):
+        kb_path = os.path.join(KB_PATH, kb_name)
+        if not os.path.exists(kb_path):
+            os.makedirs(os.path.join(kb_path, "docs"))
+            with open(os.path.join(kb_path, "urls.txt"), 'w') as f:
+                pass  # Create an empty urls.txt file
+
+        if url:
+            urls_file = os.path.join(kb_path, "urls.txt")
+            with open(urls_file, 'a') as f:
+                f.write(url + "\n")
+
+        if file_path:
+            docs_path = os.path.join(kb_path, "docs")
+            os.makedirs(docs_path, exist_ok=True)
+            file_name = os.path.basename(file_path)
+            dest_path = os.path.join(docs_path, file_name)
+            logging.info(f"Copying file from {file_path} to {dest_path}")
+            shutil.copy2(file_path, dest_path)
+
+        print(f"Added to knowledge base: {kb_name}")
