@@ -22,7 +22,7 @@ def sanitize_filename(filename):
     return sanitized or 'unnamed_conversation'  # Default name if empty
 
 class ChatUI:
-    def __init__(self, root):
+    def __init__(self, root, interpreter_manager):
         logging.debug("Initializing ChatUI")
         self.root = root
         self.root.title("OpenPI Chat")
@@ -41,7 +41,7 @@ class ChatUI:
         self.chat_manager = ChatManager(self)
         self.audio_manager = AudioManager()
         self.knowledge_manager = KnowledgeManager(self)
-        self.interpreter_manager = InterpreterManager()
+        self.interpreter_manager = interpreter_manager
         self.context_manager = ContextManager(self)
 
         self.input_box = ctk.CTkTextbox(root, height=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
@@ -51,19 +51,38 @@ class ChatUI:
     def create_ui(self):
         logging.debug("Creating UI")
         self.root.grid_rowconfigure(0, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
 
-        main_frame = ctk.CTkFrame(self.root, fg_color=get_color("BG_PRIMARY"))
-        main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-        main_frame.grid_rowconfigure(0, weight=1)
-        main_frame.grid_columnconfigure(0, weight=1)
+        # Sidebar
+        self.sidebar = ctk.CTkFrame(self.root, width=250, fg_color=get_color("BG_SECONDARY"))
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.create_sidebar()
 
-        self.create_chat_window(main_frame)
-        self.create_input_box(main_frame)
-        self.create_buttons(main_frame)
+        # Main chat area
+        self.main_frame = ctk.CTkFrame(self.root, fg_color=get_color("BG_PRIMARY"))
+        self.main_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+        self.main_frame.grid_rowconfigure(0, weight=1)
+        self.main_frame.grid_columnconfigure(0, weight=1)
+
+        self.create_chat_window(self.main_frame)
+        self.create_input_area(self.main_frame)
 
         self.root.bind('<Return>', self.send_message)
         logging.debug("UI creation complete")
+
+    def create_sidebar(self):
+        # Knowledge base section
+        kb_label = ctk.CTkLabel(self.sidebar, text="Knowledge Bases:", anchor="w")
+        kb_label.pack(padx=20, pady=(20, 5), fill="x")
+
+        self.kb_frame = ctk.CTkScrollableFrame(self.sidebar, fg_color="transparent")
+        self.kb_frame.pack(padx=20, pady=(0, 20), fill="both", expand=True)
+
+        self.kb_toggles = {}
+        for kb in self.knowledge_manager.get_knowledge_bases():
+            toggle = ctk.CTkCheckBox(self.kb_frame, text=kb, command=lambda kb=kb: self.toggle_kb(kb))
+            toggle.pack(anchor="w", pady=2)
+            self.kb_toggles[kb] = toggle
 
     def create_chat_window(self, parent):
         logging.debug("Creating chat window")
@@ -86,35 +105,72 @@ class ChatUI:
 
         self.chat_window.configure(yscrollcommand=scrollbar.set)
 
-    def create_input_box(self, parent):
-        logging.debug("Placing input box")
-        self.input_box.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+    def create_input_area(self, parent):
+        logging.debug("Creating input area")
+        input_frame = ctk.CTkFrame(parent, fg_color=get_color("BG_PRIMARY"))
+        input_frame.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+        input_frame.grid_columnconfigure(0, weight=1)
 
-    def create_buttons(self, parent):
-        logging.debug("Creating buttons")
-        button_frame = ctk.CTkFrame(parent, fg_color=get_color("BG_PRIMARY"))
-        button_frame.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
+        self.input_box = ctk.CTkTextbox(input_frame, height=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
+        self.input_box.grid(row=0, column=0, sticky="ew", padx=(0, 5))
 
-        button_style = {"fg_color": BRAND_PRIMARY, "text_color": get_color("TEXT_PRIMARY"), "hover_color": BRAND_ACCENT}
+        # Use Unicode microphone character
+        self.mode_button = ctk.CTkButton(input_frame, text="🎤", width=50, height=50, command=self.toggle_mode, 
+                                         fg_color=get_color("BG_INPUT"), text_color=BRAND_PRIMARY, 
+                                         hover_color=BRAND_ACCENT, border_width=2, border_color=BRAND_PRIMARY,
+                                         font=("Helvetica", 16))
+        self.mode_button.grid(row=0, column=1)
 
-        self.send_button = ctk.CTkButton(button_frame, text="Send", command=self.send_message, **button_style)
-        self.send_button.pack(side=ctk.LEFT, padx=5)
+    def toggle_mode(self):
+        self.is_voice_mode = not self.is_voice_mode
+        if self.is_voice_mode:
+            self.mode_button.configure(fg_color=BRAND_PRIMARY, text_color=get_color("TEXT_PRIMARY"), border_width=0)
+            self.input_box.configure(state="disabled")
+            self.start_listening()
+        else:
+            self.mode_button.configure(fg_color="transparent", text_color=BRAND_PRIMARY, border_width=2)
+            self.input_box.configure(state="normal")
+            self.stop_listening()
 
-        self.speak_button = ctk.CTkButton(button_frame, text="Speak", command=self.process_speech_input, **button_style)
-        self.speak_button.pack(side=ctk.LEFT, padx=5)
+    def continuous_listen(self):
+        while self.audio_manager.is_listening:
+            try:
+                wake_word_detected = self.audio_manager.listen_for_wake_word(wake_word=self.wake_word)
+                if wake_word_detected:
+                    self.audio_manager.generate_beep()
+                    self.chat_window.configure(state="normal")
+                    self.chat_window.insert(ctk.END, "Listening...\n", "bot_stream")
+                    self.chat_window.configure(state="disabled")
+                    self.chat_window.yview(ctk.END)
+                    self.process_speech_input()
+            except Exception as e:
+                logging.error(f"Error in continuous listening: {str(e)}")
 
-        self.mode_button = ctk.CTkButton(button_frame, text="Switch to Voice Mode", command=self.toggle_mode, **button_style)
-        self.mode_button.pack(side=ctk.LEFT, padx=5)
+    def process_speech_input(self):
+        user_input = self.audio_manager.recognize_speech()
+        if user_input and not user_input.startswith("Error"):
+            self.send_message(user_input=user_input)
 
-        self.settings_button = ctk.CTkButton(button_frame, text="Settings", command=self.open_settings, **button_style)
-        self.settings_button.pack(side=ctk.LEFT, padx=5)
+    def start_listening(self):
+        self.audio_manager.is_listening = True
+        self.continuous_listen_thread = threading.Thread(target=self.continuous_listen, daemon=True)
+        self.continuous_listen_thread.start()
 
-        self.interrupt_button = ctk.CTkButton(button_frame, text="Interrupt", command=self.interrupt_processing, **button_style)
-        self.interrupt_button.pack(side=ctk.LEFT, padx=5)
+    def stop_listening(self):
+        if self.continuous_listen_thread:
+            self.audio_manager.is_listening = False
+            self.continuous_listen_thread.join(timeout=2)
+        if self.continuous_listen_thread.is_alive():
+            logging.warning("Continuous listen thread did not stop in time")
 
-    def interrupt_processing(self):
-        # Implement the interrupt functionality here
-        pass
+
+    def toggle_kb(self, kb):
+        is_active = self.kb_toggles[kb].get()
+        if is_active:
+            self.selected_kbs.append(kb)
+        else:
+            self.selected_kbs.remove(kb)
+        self.interpreter_manager.update_selected_kbs(self.selected_kbs)
 
     def send_message(self, user_input=None):
         if not self.is_voice_mode:
@@ -140,7 +196,7 @@ class ChatUI:
             
             # Start a new thread for processing the response
             threading.Thread(target=self.process_response, args=(user_input,), daemon=True).start()
-
+            
     def process_response(self, user_input):
         response_generator, sources = self.chat_manager.process_input(user_input, self.selected_kbs)
         self.chat_window.configure(state="normal")
@@ -198,53 +254,6 @@ class ChatUI:
         self.chat_window.configure(state="normal")
         self.chat_window.delete("1.0", ctk.END)
         self.chat_window.configure(state="disabled")
-
-    def toggle_mode(self):
-        self.is_voice_mode = not self.is_voice_mode
-        if self.is_voice_mode:
-            self.mode_button.configure(text="Switch to Text Mode")
-            self.input_box.grid_remove()
-            self.send_button.pack_forget()
-            self.speak_button.pack(side=ctk.LEFT, padx=5)
-            self.start_continuous_listening()
-        else:
-            self.mode_button.configure(text="Switch to Voice Mode")
-            self.speak_button.pack_forget()
-            self.input_box.grid()
-            self.send_button.pack(side=ctk.LEFT, padx=5)
-            self.stop_continuous_listening()
-        self.input_box.configure(state="normal" if not self.is_voice_mode else "disabled")
-
-    def start_continuous_listening(self):
-        self.audio_manager.is_listening = True
-        self.continuous_listen_thread = threading.Thread(target=self.continuous_listen, daemon=True)
-        self.continuous_listen_thread.start()
-
-    def stop_continuous_listening(self):
-        if self.continuous_listen_thread:
-            self.audio_manager.is_listening = False
-            self.continuous_listen_thread.join(timeout=2)
-            if self.continuous_listen_thread.is_alive():
-                logging.warning("Continuous listen thread did not stop in time")
-
-    def continuous_listen(self):
-        while self.audio_manager.is_listening:
-            try:
-                wake_word_detected = self.audio_manager.listen_for_wake_word(wake_word=self.wake_word)
-                if wake_word_detected:
-                    self.audio_manager.generate_beep()
-                    self.chat_window.configure(state="normal")
-                    self.chat_window.insert(ctk.END, "Listening...\n", "bot_stream")
-                    self.chat_window.configure(state="disabled")
-                    self.chat_window.yview(ctk.END)
-                    self.process_speech_input()
-            except Exception as e:
-                logging.error(f"Error in continuous listening: {str(e)}")
-
-    def process_speech_input(self):
-        user_input = self.audio_manager.recognize_speech()
-        if user_input and not user_input.startswith("Error"):
-            self.send_message(user_input=user_input)
 
     def open_settings(self):
         SettingsWindow(self.root, self)

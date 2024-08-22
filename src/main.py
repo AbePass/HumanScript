@@ -16,7 +16,8 @@ class MainApplication:
         print("Initializing MainApplication")
         self.root = ctk.CTk()
         self.root.title("OpenPI Chat")
-        self.root.geometry("800x600")
+        self.root.geometry("1280x720")  # 16:9 aspect ratio
+        self.root.minsize(800, 450)  # Minimum size while maintaining 16:9
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # Set custom color theme
@@ -41,6 +42,10 @@ class MainApplication:
         ctk.ThemeManager.theme["CTkTextbox"]["fg_color"] = [get_color("BG_INPUT"), get_color("BG_INPUT")]
         ctk.ThemeManager.theme["CTkTextbox"]["text_color"] = [get_color("TEXT_SECONDARY"), get_color("TEXT_PRIMARY")]
         ctk.ThemeManager.theme["CTkTextbox"]["border_color"] = [BRAND_PRIMARY, BRAND_SECONDARY]
+        
+        # Add new theme settings for the chat interface
+        ctk.ThemeManager.theme["CTkFrame"]["fg_color"] = [get_color("BG_SECONDARY"), get_color("BG_PRIMARY")]
+        ctk.ThemeManager.theme["CTkScrollableFrame"]["fg_color"] = [get_color("BG_SECONDARY"), get_color("BG_PRIMARY")]
 
     def start(self):
         print("Starting MainApplication")
@@ -75,8 +80,7 @@ class MainApplication:
         logging.debug("Showing chat UI")
         self.root.deiconify()  # Show the main window
         try:
-            self.chat_ui = ChatUI(self.root)
-            self.chat_ui.interpreter_manager = self.interpreter_manager
+            self.chat_ui = ChatUI(self.root, self.interpreter_manager)
             print("Chat UI created, starting mainloop")
             logging.debug("Chat UI created, starting mainloop")
             self.root.mainloop()

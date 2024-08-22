@@ -12,6 +12,13 @@ load_dotenv()
 class KnowledgeManager:
     def __init__(self, root):
         self.root = root
+        self.selected_kbs = []
+
+    def get_knowledge_bases(self):
+        return [d for d in os.listdir(KB_PATH) if os.path.isdir(os.path.join(KB_PATH, d))]
+
+    def update_selected_kbs(self, selected_kbs):
+        self.selected_kbs = selected_kbs
 
     def load_docs_folder(self, knowledge_base):
         kb_path = os.path.join(KB_PATH, knowledge_base)
@@ -101,8 +108,7 @@ class KnowledgeManager:
                 self.load_docs_folder(knowledge_base)
         else:
             # Update all knowledge bases
-            knowledge_bases = [d for d in os.listdir(KB_PATH) 
-                               if os.path.isdir(os.path.join(KB_PATH, d))]
+            knowledge_bases = self.get_knowledge_bases()
             
             for kb in knowledge_bases:
                 print(f"Processing knowledge base: {kb}")
