@@ -26,7 +26,7 @@ class ContextManager:
             base_retriever = db.as_retriever(search_type="mmr", search_kwargs={"k": 5, "fetch_k": 25})
 
             # Set up the contextual compression retriever
-            llm = ChatOpenAI(temperature=0, model_name="gpt-4-0125-preview")
+            llm = ChatOpenAI(temperature=0, model_name="gpt-4o-mini")
             compressor = LLMChainExtractor.from_llm(llm)
             compression_retriever = ContextualCompressionRetriever(
                 base_compressor=compressor,

@@ -59,11 +59,13 @@ class ProviderSelectionUI:
       self.create_credential_input("OPENAI_API_KEY")
       self.create_credential_input("OPENAI_MODEL")
     elif self.provider == "azure":
+      self.create_credential_input("OPENAI_API_KEY")
       self.create_credential_input("AZURE_API_KEY")
       self.create_credential_input("AZURE_API_BASE")
       self.create_credential_input("AZURE_API_VERSION")
       self.create_credential_input("AZURE_MODEL")
     elif self.provider == "anthropic":
+      self.create_credential_input("OPENAI_API_KEY")
       self.create_credential_input("ANTHROPIC_API_KEY")
       self.create_credential_input("ANTHROPIC_MODEL")
 
