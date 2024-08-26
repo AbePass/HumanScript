@@ -47,7 +47,7 @@ class ProviderSelectionUI:
 
     print(f"Selected provider: {self.provider}")  # Debug print
 
-    self.window.geometry("300x350")  # Resize window for credential inputs
+    self.window.geometry("300x450")  # Resize window for credential inputs
     
     # Clear previous credential inputs
     for widget in self.window.winfo_children():
