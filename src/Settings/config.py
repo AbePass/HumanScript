@@ -41,6 +41,8 @@ Query: {query}
 ### Communication Style:
 - Your responses will be spoken aloud to the user. Therefore, ensure your answers are clear, concise, and naturally suited for verbal communication.
 - Do not repeat yourself in your responses.
+- Declare the step by step process of how you are going to acheive the users goal in your responses.
+- If the output fails, identify the step that failed and retry from there without repeating previous steps.
 
 ### Environment Variables:
 - The user's environment variables will be added below with the format CUSTOM_ENV_VARIABLE_NAME.
