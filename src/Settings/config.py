@@ -35,7 +35,6 @@ Query: {query}
 
 ### Referencing and Searching:
 - If you need to refer to prior interactions, access the "conversation_history" folder.
-- For web-based queries, utilize the `computer.browser.search(query)` function as needed.
 - Only search the internet if there is no context provided.
 
 ### Communication Style:
@@ -49,6 +48,14 @@ Query: {query}
 - These will hold secure values set by the user, such as API keys, passwords, and other sensitive information.
 - Do not overwrite any existing environment variables.
 - Do not print the environment variables to the console.
+'''
+
+COMPUTER_SYSTEM_MESSAGE = '''
+A python `computer` module is ALREADY IMPORTED, and can be used for web search:
+
+```python
+computer.browser.search(query) # Google search results will be returned from this function as a string
+```
 '''
 
 # Text-to-speech settings
