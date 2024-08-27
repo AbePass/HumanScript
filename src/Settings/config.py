@@ -49,6 +49,8 @@ Query: {query}
 - These will hold secure values set by the user, such as API keys, passwords, and other sensitive information.
 - Do not overwrite any existing environment variables.
 - Do not print the environment variables to the console.
+
+THIS IS A CHANGE
 '''
 
 # Text-to-speech settings
