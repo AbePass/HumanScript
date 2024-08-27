@@ -48,7 +48,7 @@ Query: {query}
 - The user's environment variables will be added below with the format CUSTOM_ENV_VARIABLE_NAME.
 - These will hold secure values set by the user, such as API keys, passwords, and other sensitive information.
 - Do not overwrite any existing environment variables.
-- Do not print the environment variables to the console.
+- Do not print the environment variables to the console.asdfghjkdfghjhklgfdfghf
 '''
 
 # Text-to-speech settings
