@@ -208,6 +208,7 @@ class ChatUI:
       self.selected_kbs.append(kb)
     else:
       self.selected_kbs.remove(kb)
+      self.context_manager.clear_custom_instructions()  # Clear custom instructions when KB is turned off
     self.knowledge_manager.update_selected_kbs(self.selected_kbs)
 
   def send_message(self, user_input=None):

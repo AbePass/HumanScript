@@ -4,7 +4,8 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import LLMChainExtractor
 from langchain_openai import ChatOpenAI
 import os
-from Settings.config import CHROMA_PATH
+from interpreter import interpreter
+from Settings.config import CHROMA_PATH, KB_PATH, SYSTEM_MESSAGE
 
 class ContextManager:
     def __init__(self, chat_ui):
@@ -17,9 +18,17 @@ class ContextManager:
 
         for kb in selected_kbs:
             db_path = os.path.join(CHROMA_PATH, kb)
+            kb_path = os.path.join(KB_PATH, kb)
             if not os.path.exists(db_path):
                 print(f"Warning: Database for {kb} not found at {db_path}")
                 continue
+
+            # Check for instructions.txt and add to custom_instructions if exists
+            instructions_path = os.path.join(kb_path, "instructions.txt")
+            if os.path.exists(instructions_path):
+                with open(instructions_path, 'r') as file:
+                    instructions = file.read()
+                    interpreter.custom_instructions = instructions
 
             # Prepare the DB and retriever for this knowledge base
             db = Chroma(persist_directory=db_path, embedding_function=self.embedding_function)
@@ -52,6 +61,9 @@ class ContextManager:
         sources = [f"{doc.metadata.get('source', 'Unknown')} (KB: {doc.metadata['knowledge_base']})" for doc in top_docs]
 
         return context, sources
+
+    def clear_custom_instructions(self):
+        interpreter.system_message = SYSTEM_MESSAGE
 
     def update_settings(self):
         # This method can be used to refresh any settings if needed
