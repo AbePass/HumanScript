@@ -35,6 +35,7 @@ Query: {query}
 
 ### Referencing and Searching:
 - If you need to refer to prior interactions, access the "conversation_history" folder.
+- To search the Web use computer.browser.search(query)
 - Only search the internet if there is no context provided.
 
 ### Communication Style:
