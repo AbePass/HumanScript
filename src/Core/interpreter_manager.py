@@ -1,7 +1,7 @@
 import os
 import json
 import customtkinter as ctk
-from Settings.config import INTERPRETER_SETTINGS, SYSTEM_MESSAGE
+from Settings.config import INTERPRETER_SETTINGS, SYSTEM_MESSAGE, COMPUTER_SYSTEM_MESSAGE
 from interpreter import interpreter
 from tkinter import messagebox  # Import messagebox from tkinter
 
@@ -20,7 +20,7 @@ class InterpreterManager:
     interpreter.llm.context_window = INTERPRETER_SETTINGS["context_window"]
     interpreter.conversation_history_path = INTERPRETER_SETTINGS["conversation_history_path"]
     interpreter.computer.import_computer_api = INTERPRETER_SETTINGS["import_computer_api"]
-    interpreter.computer.system_message = INTERPRETER_SETTINGS["computer_system_message"]
+    interpreter.computer.system_message = COMPUTER_SYSTEM_MESSAGE
     interpreter.system_message = SYSTEM_MESSAGE
 
   def configure_provider(self, provider, config):
