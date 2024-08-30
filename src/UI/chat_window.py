@@ -38,11 +38,11 @@ class ChatUI:
     self.env_vars = {k: v for k, v in os.environ.items() if k.startswith("CUSTOM_")}
     self.streaming_message = ""
     self.last_message_type = None  # To keep track of the last message type (user or AI)
+    print(interpreter.system_message)
 
     self.chat_manager = ChatManager(self)
     self.audio_manager = AudioManager()
     self.knowledge_manager = KnowledgeManager(self)
-    self.interpreter_manager = interpreter_manager
     self.context_manager = ContextManager(self)
 
     self.input_box = ctk.CTkTextbox(root, height=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))

@@ -35,6 +35,7 @@ class SettingsWindow:
     button_frame.pack(pady=20, anchor="w")
     ctk.CTkButton(button_frame, text="Save", command=self.save_settings, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side=ctk.LEFT, padx=10)
     ctk.CTkButton(button_frame, text="Cancel", command=self.cancel, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side=ctk.LEFT)
+    ctk.CTkButton(button_frame, text="Reset Chat", command=self.reset_interpreter, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side=ctk.LEFT, padx=10)
 
   def create_collapsible_section(self, title, create_content_func):
     section_frame = ctk.CTkFrame(self.scrollable_frame, fg_color=get_color("BG_TERTIARY"))
@@ -165,3 +166,8 @@ class SettingsWindow:
       widget.destroy()
     self.chat_ui.create_chat_window(self.parent)
     self.chat_ui.create_input_area(self.parent)
+
+  def reset_interpreter(self):
+    interpreter.reset()
+    messagebox.showinfo("Interpreter Reset", "The interpreter has been reset.")
+    self.return_to_chat()
