@@ -44,6 +44,6 @@ pip install pyaudio
 echo pyaudio installed.
 
 echo.
-echo Open Interpreter has been installed. Run the following command to use it:
+echo Open Interpreter has been installed. Run the following command to use it: .\opai\Scripts\activate then cd .\OpenPI then python src\main.py
 echo.
 
