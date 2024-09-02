@@ -44,7 +44,8 @@ SYSTEM_MESSAGE = '''
 - If you think a skill will help you complete a task, read the contents of the skill and follow the instructions strictly do not deviate from them unless specified otherwise.
 - If you recieve an error, retry from the last checkpoint.
 - Here are the skills you have access to:
-    - "monkey_skill.txt": download an image of a monkey.
+    - "check_inbox.txt": check the user's inbox for emails.
+    - "check_calander.txt": use the google calendar api to retrieve calendar events.
 
 ### Environment Variables:
 - The user's environment variables will be added below with the format CUSTOM_ENV_VARIABLE_NAME.
