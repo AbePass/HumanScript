@@ -1,7 +1,7 @@
 import os
 import json
 import customtkinter as ctk
-from Settings.config import INTERPRETER_SETTINGS, SYSTEM_MESSAGE, COMPUTER_SYSTEM_MESSAGE
+from Settings.config import INTERPRETER_SETTINGS, COMPUTER_SYSTEM_MESSAGE, SYSTEM_MESSAGE
 from interpreter import interpreter
 from tkinter import messagebox  # Import messagebox from tkinter
 

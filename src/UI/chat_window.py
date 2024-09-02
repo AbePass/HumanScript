@@ -321,8 +321,8 @@ class ChatUI:
       os.environ[key] = value
     # Update system message
     custom_env_vars = list(self.env_vars.keys())
-    env_var_message = "The following custom environment variables are available: " + ", ".join(custom_env_vars)
-    interpreter.system_message = interpreter.system_message.split("\n\n")[0] + f"\n\n{env_var_message}"
+    env_var_message = "\n- ".join(custom_env_vars)
+    interpreter.system_message = SYSTEM_MESSAGE + SYSTEM_MESSAGE_ENV_VARS + f"\n{env_var_message}"
     # Update ChatManager
     self.chat_manager.update_env_vars(self.env_vars)
 
