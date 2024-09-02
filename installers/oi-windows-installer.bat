@@ -35,6 +35,7 @@ echo Virtual environment activated.
 REM Install the necessary packages
 echo Installing necessary packages...
 pip install open-interpreter tk pillow speechrecognition pyautogui keyboard langchain_community langchain_openai chromadb openai pygame python-dotenv unstructured unstructured[md] unstructured[pdf] customtkinter
+pip install python-magic-bin
 echo Necessary packages installed.
 
 REM Install pyaudio
@@ -43,6 +44,6 @@ pip install pyaudio
 echo pyaudio installed.
 
 echo.
-echo Open Interpreter has been installed. Run the following command to use it:
+echo Open Interpreter has been installed. Run the following command to use it: .\opai\Scripts\activate then cd .\OpenPI then python src\main.py
 echo.
-echo .\opai\Scripts\activate && python .\OpenPI\src\main.py
+

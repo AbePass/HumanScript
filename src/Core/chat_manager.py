@@ -50,6 +50,12 @@ class ChatManager:
     if context is None:
       prompt = query
     else:
-      prompt = f"Context: {context}\n\nQuery: {query}"
+      prompt = f"""
+      Context: {context}
+
+      Use the provided context to help answer the query, but prioritize answering the query or completing the task. If a skill is relevant to the goal, use that skill.
+
+      Query: {query}
+      """
     print(prompt)
     return interpreter.chat(prompt, display=False, stream=True)

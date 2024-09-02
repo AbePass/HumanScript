@@ -1,0 +1,22 @@
+1. **Set up the environment**:
+   - Ensure you have `google-auth`, `google-auth-oauthlib`, `google-auth-httplib2`, and `google-api-python-client` installed. You can install them using the following command:
+
+2. **Import necessary libraries**:
+   - Import the required libraries in your Python script:
+
+3. **Define the scope**:
+   - Define the scope for accessing Gmail. For reading emails, use the following scope:
+
+4. **Load credentials and token**:
+   - Load the credentials and token from the files on your Desktop: ~/Desktop/credentials.json and ~/Desktop/token.pickle
+
+5. **Build the Gmail service**:
+   - Build the Gmail service using the credentials:
+
+6. **Check the inbox**:
+   - Use the Gmail API to check the inbox and list the messages:
+
+7. **Provide feedback**:
+   - Inform the user about the status of the inbox check:
+     - If there are no new messages, print "No new messages."
+     - If there are new messages, print the snippets of the messages.

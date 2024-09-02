@@ -1,0 +1,24 @@
+
+1. **Set up the Google Calendar API**: Ensure you have the `credentials.json` file for the Google Calendar API.
+
+2. **Authenticate and authorize**: Use OAuth 2.0 to authenticate and authorize access to your calendar.
+
+3. **Retrieve calendar events**: Use the API to fetch the events from your calendar.
+
+### Step 1: Import necessary libraries
+We'll import the required libraries in our script.
+
+### Step 2: Define the scope
+We'll define the scope for accessing Google Calendar.
+
+### Step 3: Load credentials and token
+We'll load the credentials and token from the specified files. ~/Desktop/credentials.json ~/Desktop/token.pickle
+
+### Step 4: Build the Calendar service
+We'll build the Calendar service using the credentials.
+
+### Step 5: Retrieve calendar events
+We'll use the Calendar API to retrieve the events from your calendar.
+
+### Step 6: Provide feedback
+We'll inform you about the retrieved events.
