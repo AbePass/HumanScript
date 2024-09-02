@@ -15,6 +15,7 @@ from Settings.color_settings import *
 import re
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, messagebox
+from collections import OrderedDict
 
 def sanitize_filename(filename):
   # Remove or replace invalid characters
@@ -35,7 +36,7 @@ class ChatUI:
     self.is_voice_mode = False
     self.continuous_listen_thread = None
     self.interpreter_settings = INTERPRETER_SETTINGS.copy()
-    self.env_vars = {k: v for k, v in os.environ.items() if k.startswith("CUSTOM_")}
+    self.env_vars = OrderedDict()
     self.streaming_message = ""
     self.last_message_type = None  # To keep track of the last message type (user or AI)
     print(interpreter.system_message)
@@ -316,15 +317,23 @@ class ChatUI:
     self.chat_manager.update_interpreter_settings(self.interpreter_settings)
 
   def update_env_vars(self, new_env_vars):
-    self.env_vars.update(new_env_vars)
-    for key, value in new_env_vars.items():
-      os.environ[key] = value
-    # Update system message
-    custom_env_vars = list(self.env_vars.keys())
-    env_var_message = "\n- ".join(custom_env_vars)
-    interpreter.system_message = SYSTEM_MESSAGE + SYSTEM_MESSAGE_ENV_VARS + f"\n{env_var_message}"
-    # Update ChatManager
-    self.chat_manager.update_env_vars(self.env_vars)
+      self.env_vars.update(new_env_vars)
+      for key, value in new_env_vars.items():
+          os.environ[key] = value
+      
+      # Update system message
+      custom_env_vars = sorted(set(key for key in self.env_vars.keys() if key.startswith("CUSTOM_")))
+      env_var_message = "\n- ".join(custom_env_vars)
+      
+      interpreter.system_message = (
+          f"{SYSTEM_MESSAGE}\n"
+          f"{SYSTEM_MESSAGE_ENV_VARS}\n"
+          f"\n- {env_var_message}"
+      )
+      print(interpreter.system_message)
+      
+      # Update ChatManager
+      self.chat_manager.update_env_vars(self.env_vars)
 
   def add_to_knowledge_base(self):
     # Clear the main frame and display add to knowledge base options

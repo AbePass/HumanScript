@@ -106,7 +106,7 @@ class SettingsWindow:
   def add_env_var(self):
     key = simpledialog.askstring("Add Environment Variable", "Enter variable name (will be prefixed with CUSTOM_):")
     if key:
-      key = f"CUSTOM_{key}"
+      key = f"CUSTOM_{key.upper().replace(' ', '_')}"
       value = simpledialog.askstring("Add Environment Variable", f"Enter value for {key}:")
       if value:
         os.environ[key] = value
