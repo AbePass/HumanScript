@@ -84,7 +84,3 @@ KB_PATH = "Knowledge"
 
 # Default selected knowledge bases
 DEFAULT_SELECTED_KBS = []
-
-# Audio settings
-BEEP_FREQUENCY = 440  # Frequency of the beep in Hz (A4 note)
-BEEP_DURATION = 0.2  # Duration of the beep in seconds
