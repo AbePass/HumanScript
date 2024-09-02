@@ -8,8 +8,8 @@ INTERPRETER_SETTINGS = {
     "supports_vision": True,
     "supports_functions": True,
     "auto_run": True,
-    "loop": True,
-    "temperature": 0.3,
+    "loop": False,
+    "temperature": 0.2,
     "max_tokens": 4096,
     "context_window": 10000,
     "conversation_history_path": "conversation_history",
@@ -24,13 +24,15 @@ SYSTEM_MESSAGE_PERMISSIONS_ENV = '''
 
 SYSTEM_MESSAGE_EXECUTION_RESPONSE = '''
 ### Execution and Response:
-- When a query involves running a command or code, execute it immediately and provide the output.
+- If one of your skills is relevant, use it.
 - If additional context is provided, use it to inform your actions and responses.
 - Expect prompts in the format:
 
-Context: {context}
+      Context: {context}
 
-Query: {query}
+      Use the provided context to help answer the query, but prioritize answering the query or completing the task. If a skill is relevant to the goal, use that skill.
+
+      Query: {query}
 
 - Use the provided context to answer the query.
 '''

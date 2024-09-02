@@ -7,6 +7,6 @@ Knowledge/*
 src/Settings/provider_config.json
 
 !conversation_history/.gitkeep
-!Databases/.gitkeep
+!src/Databases/.gitkeep
 !Knowledge/.gitkeep
 !User_Data/.gitkeep

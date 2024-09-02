@@ -23,6 +23,7 @@ class InterpreterManager:
     interpreter.computer.system_message = COMPUTER_SYSTEM_MESSAGE
     interpreter.system_message = SYSTEM_MESSAGE
 
+
   def configure_provider(self, provider, config):
     # Common for all providers
     os.environ["OPENAI_API_KEY"] = config.get("OPENAI_API_KEY", "")
