@@ -30,7 +30,7 @@ SYSTEM_MESSAGE_EXECUTION_RESPONSE = '''
 
       Context: {context}
 
-      Use the provided context to help answer the query, but prioritize answering the query or completing the task. If a skill is relevant to the goal, use that skill.
+      Available Skills: {AVAILABLE_SKILLS}
 
       Query: {query}
 
@@ -50,8 +50,15 @@ SYSTEM_MESSAGE_SKILLS = '''
 - If you think a skill will help you complete a task, read the contents of the skill and follow the instructions strictly do not deviate from them unless specified otherwise.
 - If you recieve an error, retry from the last checkpoint.
 - Here are the skills you have access to:
-    - "check_inbox.txt": check the user's inbox for emails.
-    - "check_calander.txt": use the google calendar api to retrieve calendar events.
+    {AVAILABLE_SKILLS}
+'''
+
+AVAILABLE_SKILLS = '''
+- check_inbox.txt - Check the user's inbox for emails.
+- check_calander.txt - Use the google calendar api to retrieve calendar events.
+- create_clickup_task.txt - Create a task in clickup.
+- create_event.txt - Create an event in google calendar.
+- download_instructions.txt - Download an image of an apple from a url.
 '''
 
 SYSTEM_MESSAGE_ENV_VARS = '''
@@ -84,3 +91,7 @@ KB_PATH = "Knowledge"
 
 # Default selected knowledge bases
 DEFAULT_SELECTED_KBS = []
+
+BEEP_DURATION = 0.25
+BEEP_FREQUENCY = 440
+

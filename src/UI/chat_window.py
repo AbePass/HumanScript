@@ -132,7 +132,7 @@ class ChatUI:
     chat_frame.grid_rowconfigure(0, weight=1)
     chat_frame.grid_columnconfigure(0, weight=1)
 
-    self.chat_window = ctk.CTkTextbox(chat_frame, wrap="word", state="disabled", cursor="arrow", fg_color=get_color("BG_TERTIARY"), text_color=get_color("TEXT_PRIMARY"))
+    self.chat_window = ctk.CTkTextbox(chat_frame, wrap="word", state="disabled", cursor="arrow", fg_color=get_color("BG_TERTIARY"), text_color=get_color("TEXT_PRIMARY"), font=("Helvetica", 20))
     self.chat_window.grid(row=0, column=0, sticky="nsew")
 
     # Configure tags for text coloring and alignment
