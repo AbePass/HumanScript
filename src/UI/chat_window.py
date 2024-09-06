@@ -27,7 +27,7 @@ def sanitize_filename(filename):
 class ChatUI:
   def __init__(self, root, interpreter_manager):
     self.root = root
-    self.root.title("OpenPI Chat")
+    self.root.title("HumanScript Chat")
 
     self.selected_kbs = DEFAULT_SELECTED_KBS.copy()
     self.wake_word = WAKE_WORD
@@ -49,6 +49,7 @@ class ChatUI:
     self.input_box = ctk.CTkTextbox(root, height=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
     
     self.create_ui()
+    self.streaming_label = None
 
   def create_ui(self):
     self.root.grid_rowconfigure(0, weight=1)
@@ -132,19 +133,57 @@ class ChatUI:
     chat_frame.grid_rowconfigure(0, weight=1)
     chat_frame.grid_columnconfigure(0, weight=1)
 
-    self.chat_window = ctk.CTkTextbox(chat_frame, wrap="word", state="disabled", cursor="arrow", fg_color=get_color("BG_TERTIARY"), text_color=get_color("TEXT_PRIMARY"), font=("Helvetica", 20))
-    self.chat_window.grid(row=0, column=0, sticky="nsew")
+    self.chat_canvas = ctk.CTkCanvas(chat_frame, bg=get_color("BG_TERTIARY"), highlightthickness=0)
+    self.chat_canvas.grid(row=0, column=0, sticky="nsew")
 
-    # Configure tags for text coloring and alignment
-    self.chat_window.tag_config("user", foreground=BRAND_PRIMARY, justify="right")
-    self.chat_window.tag_config("bot", foreground=BRAND_SECONDARY, justify="left")
-    self.chat_window.tag_config("bot_stream", foreground=get_color("TEXT_SECONDARY"), justify="left")
-    self.chat_window.tag_config("bot_final", foreground=BRAND_SECONDARY, justify="left")
+    self.message_frame = ctk.CTkFrame(self.chat_canvas, fg_color=get_color("BG_TERTIARY"))
+    self.canvas_frame = self.chat_canvas.create_window((0, 0), window=self.message_frame, anchor="nw")
 
-    scrollbar = ctk.CTkScrollbar(chat_frame, command=self.chat_window.yview)
+    scrollbar = ctk.CTkScrollbar(chat_frame, command=self.chat_canvas.yview)
     scrollbar.grid(row=0, column=1, sticky="ns")
 
-    self.chat_window.configure(yscrollcommand=scrollbar.set)
+    self.chat_canvas.configure(yscrollcommand=scrollbar.set)
+
+    self.message_frame.bind("<Configure>", self.on_frame_configure)
+    self.chat_canvas.bind("<Configure>", self.on_canvas_configure)
+
+  def on_frame_configure(self, event):
+    self.chat_canvas.configure(scrollregion=self.chat_canvas.bbox("all"))
+
+  def on_canvas_configure(self, event):
+    self.chat_canvas.itemconfig(self.canvas_frame, width=event.width)
+
+  def create_chat_bubble(self, message, is_user):
+    bubble_frame = ctk.CTkFrame(self.message_frame, fg_color=BRAND_PRIMARY if is_user else BRAND_SECONDARY)
+    bubble_frame.pack(pady=5, padx=10, anchor="e" if is_user else "w")
+
+    message_label = ctk.CTkLabel(
+      bubble_frame,
+      text=message,
+      wraplength=400,
+      justify="right" if is_user else "left",
+      text_color=get_color("TEXT_PRIMARY")
+    )
+    message_label.pack(padx=10, pady=5)
+
+    self.chat_canvas.update_idletasks()
+    self.chat_canvas.yview_moveto(1.0)
+
+  def create_streaming_label(self):
+    self.streaming_label = ctk.CTkLabel(
+      self.message_frame,
+      text="",
+      wraplength=400,
+      justify="left",
+      text_color=get_color("TEXT_PRIMARY")
+    )
+    self.streaming_label.pack(pady=5, padx=10, anchor="w")
+
+  def update_streaming_label(self, text):
+    if self.streaming_label:
+      self.streaming_label.configure(text=text)
+      self.chat_canvas.update_idletasks()
+      self.chat_canvas.yview_moveto(1.0)
 
   def create_input_area(self, parent):
     input_frame = ctk.CTkFrame(parent, fg_color=get_color("BG_PRIMARY"))
@@ -178,10 +217,7 @@ class ChatUI:
         wake_word_detected = self.audio_manager.listen_for_wake_word(wake_word=self.wake_word)
         if wake_word_detected:
           self.audio_manager.generate_beep()
-          self.chat_window.configure(state="normal")
-          self.chat_window.insert(ctk.END, "Listening...\n", "bot_stream")
-          self.chat_window.configure(state="disabled")
-          self.chat_window.yview(ctk.END)
+          self.create_chat_bubble("Listening...", is_user=False)
           self.process_speech_input()
       except Exception as e:
         logging.error(f"Error in continuous listening: {str(e)}")
@@ -217,15 +253,8 @@ class ChatUI:
       user_input = self.input_box.get("1.0", ctk.END).strip()
     
     if user_input:
-      self.chat_window.configure(state="normal")
-      self.chat_window.insert(ctk.END, "You: " + user_input + "\n", "user")
-      self.chat_window.configure(state="disabled")
-      self.chat_window.see(ctk.END)
-      self.root.update_idletasks()
-
-      if not self.is_voice_mode:
-        self.input_box.delete("1.0", ctk.END)
-      
+      self.create_chat_bubble(f"{user_input}", is_user=True)
+      self.input_box.delete("1.0", ctk.END)
       # Modify the filename generation for the interpreter
       timestamp = datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
       sanitized_query = sanitize_filename(user_input[:50])  # Limit to first 50 characters
@@ -239,60 +268,45 @@ class ChatUI:
       
   def process_response(self, user_input):
     response_generator, sources = self.chat_manager.process_input(user_input, self.selected_kbs)
-    self.chat_window.configure(state="normal")
-    self.chat_window.insert(ctk.END, "Bot: ", "bot")
     
     # Add indicator for knowledge base query
     if self.selected_kbs:
-      self.chat_window.insert(ctk.END, "Knowledge bases being queried:\n", "bot_stream")
-      for kb in self.selected_kbs:
-        self.chat_window.insert(ctk.END, f"- {kb}\n", "bot_stream")
-    self.chat_window.see(ctk.END)
-    self.root.update_idletasks()
+      kb_info = "Knowledge bases being queried:\n" + "\n".join(f"- {kb}" for kb in self.selected_kbs)
+      self.create_chat_bubble(kb_info, is_user=False)
     
-    stream_start = self.chat_window.index(ctk.END)
+    self.create_streaming_label()
     full_response = ""
+    for message in response_generator:
+      if isinstance(message, dict) and 'content' in message:
+        content = message['content']
+        if content is not None:
+          content = str(content)
+          full_response += content
+          self.update_streaming_label(f"{full_response}")
 
-    try:
-      for message in response_generator:
-        if isinstance(message, dict) and 'content' in message:
-          content = message['content']
-          if content is not None:
-            content = str(content)
-            full_response += content
-            self.chat_window.insert(ctk.END, content, "bot_stream")
-            self.chat_window.see(ctk.END)
-            self.root.update_idletasks()
-    except Exception as e:
-      logging.exception("Error processing response")
+    # Remove the streaming label
+    if self.streaming_label:
+      self.streaming_label.destroy()
+      self.streaming_label = None
 
     # Get the final response from the last message
     final_response = interpreter.messages[-1]['content'] if interpreter.messages else full_response
     
-    # Insert a newline before the final response
-    self.chat_window.insert(ctk.END, "\n", "bot")
-    
-    # Insert the final response on a new line
-    self.chat_window.insert(ctk.END, "Final response:\n", "bot_final")
-    self.chat_window.insert(ctk.END, final_response, "bot_final")
+    # Insert the final response as a chat bubble
+    self.create_chat_bubble(f"{final_response}", is_user=False)
     
     if sources:
-      self.chat_window.insert(ctk.END, "\nSources:\n", "bot_final")
-      for source in sources:
-        self.chat_window.insert(ctk.END, f"- {source}\n", "bot_stream")
-    
-    self.chat_window.insert(ctk.END, "\n")
-    self.chat_window.configure(state="disabled")
-    self.chat_window.see(ctk.END)
+      sources_text = "Sources:\n" + "\n".join(f"- {source}" for source in sources)
+      self.create_chat_bubble(sources_text, is_user=False)
     
     if self.is_voice_mode:
       threading.Thread(target=self.audio_manager.text_to_speech, args=(final_response,), daemon=True).start()
 
   def reset_chat(self):
     interpreter.reset()
-    self.chat_window.configure(state="normal")
-    self.chat_window.delete("1.0", ctk.END)
-    self.chat_window.configure(state="disabled")
+    for widget in self.message_frame.winfo_children():
+      widget.destroy()
+    self.streaming_label = None
 
   def open_settings(self):
     # Clear the main frame and display settings

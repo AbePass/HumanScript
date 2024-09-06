@@ -22,5 +22,5 @@ sudo apt-get install -y portaudio19-dev ffmpeg libsdl2-mixer-2.0-0 flac
 pip install pyaudio
 
 echo ""
-echo "Open Interpreter has been installed. Run the following command to use it: source opai/bin/activate then cd OpenPI then python src/main.py"
+echo "Open Interpreter has been installed. Run the following command to use it: source opai/bin/activate then cd HumanScript then python src/main.py"
 echo ""
