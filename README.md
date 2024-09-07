@@ -23,9 +23,9 @@ To get started with this assistant framework, follow these steps:
 
 1. **Prerequisites**: Ensure you have Python, Git, and C++ development tools installed on your system.
 2. **Clone the Repository**: Clone this repository to your local machine using `git clone https://github.com/AbePass/HumanScript.git`.
-3. **Run the Installer**: Depending on your operating system, run either `.HumanScript\installers\oi-windows-installer` or `bash HumanScript\installers\oi-linux-installer` to set up the virtual environment (make sure to activate the environment using `.\opai\Scripts\activate` or `source opai\bin\activate` if it doesn't do it automatically).
+3. **Run the Installer**: Depending on your operating system, run either `.\HumanScript\installers\oi-windows-installer` or `bash HumanScript\installers\oi-linux-installer` to set up the virtual environment (make sure to activate the environment using `.\opai\Scripts\activate` or `source opai\bin\activate` if it doesn't do it automatically).
 4. **Configure your assistant**: Edit the Settings/config.py to set up your assistant.
-5. **Run your assistant**: Run the assistant either on your desktop or on your Raspberry Pi using `python HumanScript/src/main.py`.
+5. **Run your assistant**: Run the assistant either on your desktop or on your Raspberry Pi using `cd HumanScript` and then `python src/main.py`.
 6. **Add your own knowledge**: Add your own knowledge in the settings menu of the UI.
 
 For detailed instructions and tutorials, please refer to the documentation provided in this repository.

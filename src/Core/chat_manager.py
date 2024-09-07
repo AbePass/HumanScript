@@ -50,6 +50,7 @@ class ChatManager:
     if context is None:
       prompt = f"""
       Look at the available skills and use relevant ones to complete the query: {AVAILABLE_SKILLS}
+      If no skills are relevant, respond to the query directly.
 
       Query: {query}
       """
@@ -57,7 +58,8 @@ class ChatManager:
       prompt = f"""
       Context: {context}
 
-      These are user created skills, Prioritize these available skills if they will help you complete the query : {AVAILABLE_SKILLS}
+      Look at the available skills and use relevant ones to complete the query: {AVAILABLE_SKILLS}
+      If no skills are relevant, respond to the query directly.
 
       Query: {query}
       """
