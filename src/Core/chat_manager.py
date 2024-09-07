@@ -49,6 +49,7 @@ class ChatManager:
   def get_interpreter_response(self, context, query):
     if context is None:
       prompt = f"""
+
       Look at the available skills and use relevant ones to complete the query: {AVAILABLE_SKILLS}
       If no skills are relevant, respond to the query directly.
 
