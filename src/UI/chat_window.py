@@ -289,8 +289,11 @@ class ChatUI:
       self.streaming_label.destroy()
       self.streaming_label = None
 
-    # Get the final response from the last message
-    final_response = interpreter.messages[-1]['content'] if interpreter.messages else full_response
+    # Get the final response from the last message if the role is "assistant" otherwise return "no response"
+    if interpreter.messages and interpreter.messages[-1]['role'] == 'assistant':
+      final_response = interpreter.messages[-1]['content']
+    else:
+      final_response = "no response"
     
     # Insert the final response as a chat bubble
     self.create_chat_bubble(f"{final_response}", is_user=False)

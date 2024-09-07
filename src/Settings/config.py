@@ -26,14 +26,6 @@ SYSTEM_MESSAGE_EXECUTION_RESPONSE = '''
 ### Execution and Response:
 - If one of your skills is relevant, use it.
 - If additional context is provided, use it to inform your actions and responses.
-- Expect prompts in the format:
-
-      Context: {context}
-
-      Available Skills: {AVAILABLE_SKILLS}
-
-      Query: {query}
-
 - Use the provided context to answer the query.
 '''
 
@@ -41,7 +33,6 @@ SYSTEM_MESSAGE_REFERENCING_SEARCHING = '''
 ### Referencing and Searching:
 - If you need to refer to prior interactions, access the "conversation_history" folder.
 - To search the Web use computer.browser.search(query)
-- Only search the internet if there is no context provided.
 '''
 
 SYSTEM_MESSAGE_SKILLS = '''
