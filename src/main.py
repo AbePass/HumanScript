@@ -14,7 +14,7 @@ print("Starting main.py")
 class MainApplication:
     def __init__(self):
         self.root = ctk.CTk()
-        self.root.title("OpenPI Chat")
+        self.root.title("HumanScript Chat")
         self.root.geometry("1280x720")  # 16:9 aspect ratio
         self.root.minsize(800, 450)  # Minimum size while maintaining 16:9
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)

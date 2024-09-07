@@ -54,11 +54,7 @@ SYSTEM_MESSAGE_SKILLS = '''
 '''
 
 AVAILABLE_SKILLS = '''
-- check_inbox.txt - Check the user's inbox for emails.
-- check_calander.txt - Use the google calendar api to retrieve calendar events.
-- create_clickup_task.txt - Create a task in clickup.
-- create_event.txt - Create an event in google calendar.
-- download_instructions.txt - Download an image of an apple from a url.
+    there are no skills available
 '''
 
 SYSTEM_MESSAGE_ENV_VARS = '''

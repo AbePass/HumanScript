@@ -27,7 +27,7 @@ def sanitize_filename(filename):
 class ChatUI:
   def __init__(self, root, interpreter_manager):
     self.root = root
-    self.root.title("OpenPI Chat")
+    self.root.title("HumanScript Chat")
 
     self.selected_kbs = DEFAULT_SELECTED_KBS.copy()
     self.wake_word = WAKE_WORD

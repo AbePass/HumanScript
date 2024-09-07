@@ -49,7 +49,8 @@ class ChatManager:
   def get_interpreter_response(self, context, query):
     if context is None:
       prompt = f"""
-      Look at the available skills and use relevant ones to complete the query: {AVAILABLE_SKILLS}
+      Look at the available skills and use any relevant ones to complete the query: {AVAILABLE_SKILLS}
+      if no skills are relevant ignore this step and respond to the query
 
       Query: {query}
       """
@@ -57,7 +58,9 @@ class ChatManager:
       prompt = f"""
       Context: {context}
 
-      These are user created skills, Prioritize these available skills if they will help you complete the query : {AVAILABLE_SKILLS}
+      Look at the available skills and use any relevant ones to complete the query: {AVAILABLE_SKILLS}
+      if no skills are relevant ignore this step and respond to the query
+      
 
       Query: {query}
       """
