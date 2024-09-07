@@ -1,4 +1,4 @@
-## Platform Agnostic Assistant Framework by Abraham Passmore at Human Devices
+## HumanScript by Abraham Passmore at Human Devices
 
 This repository by Abraham Passmore at Human Devices (humandevices.co) presents a platform agnostic assistant framework designed to run on a Raspberry Pi but can also be run on any platform as a desktop assistant. The framework provides tools like customizable knowledge bases, wakeword recognition for handsfree use, and chat memory, offering a versatile and powerful platform for various uses, including but not limited to:
 

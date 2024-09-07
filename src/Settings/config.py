@@ -54,7 +54,7 @@ SYSTEM_MESSAGE_SKILLS = '''
 '''
 
 AVAILABLE_SKILLS = '''
-    there are no skills available
+There are no available skills.
 '''
 
 SYSTEM_MESSAGE_ENV_VARS = '''
