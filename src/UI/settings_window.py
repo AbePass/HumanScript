@@ -13,6 +13,8 @@ class SettingsWindow:
   def __init__(self, parent, chat_ui):
     self.parent = parent
     self.chat_ui = chat_ui
+    self.selected_files = []
+    self.selected_urls = []
     self.create_widgets()
     self.load_current_settings()
 
@@ -29,6 +31,9 @@ class SettingsWindow:
 
     # Environment Variables
     self.create_collapsible_section("Environment Variables", self.create_env_var_settings)
+
+    # Knowledge Base Management
+    self.create_collapsible_section("Knowledge Base Management", self.create_kb_management_settings)
 
     # Buttons
     button_frame = ctk.CTkFrame(self.scrollable_frame, fg_color=get_color("BG_PRIMARY"))
@@ -117,6 +122,61 @@ class SettingsWindow:
         ctk.CTkLabel(row_frame, text=key, text_color=get_color("TEXT_PRIMARY")).pack(side=ctk.LEFT)
         ctk.CTkEntry(row_frame, textvariable=self.env_vars[key], show="*", fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY")).pack(side=ctk.RIGHT, expand=True, fill=ctk.X)
 
+  def create_kb_management_settings(self, parent):
+    ctk.CTkLabel(parent, text="Select files and URLs to be added to the knowledge base:", text_color=get_color("TEXT_PRIMARY")).pack(pady=5, anchor="w")
+    ctk.CTkButton(parent, text="Add File", command=self.add_file, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(pady=5, anchor="w")
+    ctk.CTkButton(parent, text="Add URL", command=self.add_url, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(pady=5, anchor="w")
+
+    self.kb_dropdown = ctk.CTkComboBox(parent, values=self.chat_ui.knowledge_manager.get_knowledge_bases() + ["New Knowledge Base"], fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
+    self.kb_dropdown.pack(pady=10, anchor="w")
+
+    ctk.CTkButton(parent, text="Add to Knowledge Base", command=self.submit_kb, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(pady=5, anchor="w")
+    ctk.CTkButton(parent, text="Refresh Knowledge", command=self.rebuild_knowledge_bases, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(pady=5, anchor="w")
+
+  def add_file(self):
+    file_paths = filedialog.askopenfilenames()
+    if file_paths:
+      self.selected_files.extend(file_paths)
+      messagebox.showinfo("Files Added", f"Added {len(file_paths)} files.")
+
+  def add_url(self):
+    url = simpledialog.askstring("Add URL", "Enter URL:")
+    if url:
+      self.selected_urls.append(url)
+      messagebox.showinfo("URL Added", f"Added URL: {url}")
+
+  def submit_kb(self):
+    kb_name = self.kb_dropdown.get()
+    if kb_name == "New Knowledge Base":
+      kb_name = simpledialog.askstring("New Knowledge Base", "Enter name for the new knowledge base:")
+      if not kb_name:
+        messagebox.showerror("Error", "Please enter a name for the new knowledge base.")
+        return
+
+    kb_path = os.path.join(KB_PATH, kb_name)
+    os.makedirs(kb_path, exist_ok=True)
+
+    docs_path = os.path.join(kb_path, "docs")
+    os.makedirs(docs_path, exist_ok=True)
+
+    urls_path = os.path.join(kb_path, "urls.txt")
+
+    for file_path in self.selected_files:
+      shutil.copy(file_path, docs_path)
+
+    with open(urls_path, "a") as f:
+      for url in self.selected_urls:
+        f.write(url + "\n")
+
+    self.selected_files.clear()
+    self.selected_urls.clear()
+    messagebox.showinfo("Knowledge Base Updated", f"Files and URLs have been added to {kb_name}.")
+
+  def rebuild_knowledge_bases(self):
+    self.chat_ui.knowledge_manager.build_vector_database()
+    messagebox.showinfo("Rebuild Knowledge Bases", "Knowledge bases have been rebuilt.")
+    self.chat_ui.update_sidebar()  # Update the sidebar checkboxes
+
   def load_current_settings(self):
     self.wake_word_entry.insert(0, self.chat_ui.wake_word)
     
@@ -153,6 +213,8 @@ class SettingsWindow:
 
     # Notify the user
     messagebox.showinfo("Settings Saved", "Your settings have been successfully updated.")
+    # Update the sidebar checkboxes
+    self.chat_ui.update_sidebar()
     # Return to chat window
     self.return_to_chat()
 
