@@ -99,6 +99,23 @@ class ChatUI:
     )
     settings_icon.pack(pady=10, padx=20, fill="x")
 
+  def refresh_knowledge_bases(self):
+    # Clear the current knowledge base toggles
+    for widget in self.kb_frame.winfo_children():
+      widget.destroy()
+
+    # Recreate the knowledge base toggles
+    self.kb_toggles = {}
+    for kb in self.knowledge_manager.get_knowledge_bases():
+      toggle = ctk.CTkCheckBox(self.kb_frame, text=kb, command=lambda kb=kb: self.toggle_kb(kb))
+      toggle.pack(anchor="w", pady=2)
+      self.kb_toggles[kb] = toggle
+
+    # Update the selected knowledge bases in the knowledge manager
+    selected_kbs = [kb for kb, toggle in self.kb_toggles.items() if toggle.get()]
+    self.knowledge_manager.update_selected_kbs(selected_kbs)
+
+
   def create_chat_window(self, parent):
     chat_frame = ctk.CTkFrame(parent, fg_color=get_color("BG_TERTIARY"))
     chat_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
