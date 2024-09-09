@@ -132,10 +132,6 @@ class SettingsWindow:
     ctk.CTkButton(button_frame, text="Add File", command=self.add_file, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side="left", padx=(0, 5))
     ctk.CTkButton(button_frame, text="Add URL", command=self.add_url, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side="left")
 
-    ctk.CTkLabel(parent, text="Queue:", text_color=get_color("TEXT_PRIMARY")).pack(pady=(10, 5), anchor="w")
-    self.queue_display = ctk.CTkTextbox(parent, height=100, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
-    self.queue_display.pack(pady=5, fill="x", expand=True)
-
     self.kb_dropdown = ctk.CTkComboBox(parent, values=self.chat_ui.knowledge_manager.get_knowledge_bases() + ["New Knowledge Base"], fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
     self.kb_dropdown.pack(pady=10, anchor="w")
 
@@ -144,6 +140,10 @@ class SettingsWindow:
 
     ctk.CTkButton(action_frame, text="Add to Knowledge Base", command=self.submit_kb, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side="left", padx=(0, 5))
     ctk.CTkButton(action_frame, text="Clear Queue", command=self.clear_queue, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(side="left")
+
+    ctk.CTkLabel(parent, text="Queue:", text_color=get_color("TEXT_PRIMARY")).pack(pady=(10, 5), anchor="w")
+    self.queue_display = ctk.CTkTextbox(parent, height=100, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
+    self.queue_display.pack(pady=5, fill="x", expand=True)
 
     ctk.CTkButton(parent, text="Refresh Selected Knowledge Base", command=self.refresh_selected_kb, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"), hover_color=get_color("BG_SECONDARY")).pack(pady=(10, 5), anchor="w")
 
