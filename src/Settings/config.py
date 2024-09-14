@@ -32,20 +32,27 @@ SYSTEM_MESSAGE_EXECUTION_RESPONSE = '''
 SYSTEM_MESSAGE_REFERENCING_SEARCHING = '''
 ### Referencing and Searching:
 - If you need to refer to prior interactions, access the "conversation_history" folder.
-- To search the Web use computer.browser.search(query)
+- If the user prompt asks to do something that requires accessing an internet browser, use the Computer.browser.search function.
 '''
 
 SYSTEM_MESSAGE_SKILLS = '''
 ### Skills:
 - You have access to a folder called "Skillset" located in the current working directory, this contains text files with step by step instructions on how to complete tasks.
-- If you think a skill will help you complete a task, read the contents of the skill and follow the instructions strictly do not deviate from them unless specified otherwise.
+- When getting a new prompt, if you think a skill will help you complete a task, read the contents of the skill and follow the instructions strictly do not deviate from them unless specified otherwise.
 - If you recieve an error, retry from the last checkpoint.
+- DO NOT IGNORE! If a user asks you to save something as a skill, follow "Save_Task_as_Skill.txt" strictly. They are referring to whatever task it was you executed for them. They are not referring to the results of the task unless they explicitly say so. In this case you must use the "Save_Task_as_Skill.txt" skill to fulfill the request. Follow the instuctions in that skill without deviation.
 - Here are the skills you have access to:
     {AVAILABLE_SKILLS}
 '''
 
 AVAILABLE_SKILLS = '''
-There are no available skills.
+Here are the skills and their uses.
+- "Computer_browser_search_skill.txt" This skill should be used to retrieve information from the internet, such as checking the weather, web searches, acessing accounts, anything that requires getting online.
+- "monkey_skill.txt": download an image of a monkey.
+- "HRMD_skill.txt" This should be used whenever you need to create markdown documents that are both human-readable and optimized for providing clear instructions to language learning models (LLMs). This is the default format for skills.
+- "pdf_to_markdown_skill.txt": General guidelines for converting PDFs to markdown files.
+- "pdf_list_to_markdown_skill.txt": This guide details converting PDF lists under headings into a readable Markdown file by extracting text, identifying headings, and formatting lists.
+- "Save_Task_as_Skill.txt": This skill guides the LLM on how to save a user-requested task as a repeatable skill, following a specific format and process, when the user asks to save something as a skill.
 '''
 
 SYSTEM_MESSAGE_ENV_VARS = '''
