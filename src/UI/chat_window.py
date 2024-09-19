@@ -7,15 +7,13 @@ from Settings.config import *
 from Core.chat_manager import ChatManager
 from Core.audio_manager import AudioManager
 from Core.knowledge_manager import KnowledgeManager
-from Core.interpreter_manager import InterpreterManager
 from Core.context_manager import ContextManager
+from Core.interpreter_manager import InterpreterManager
 from interpreter import interpreter
 from UI.settings_window import SettingsWindow
 from Settings.color_settings import *
 import re
-import tkinter as tk
-from tkinter import ttk, filedialog, simpledialog, messagebox
-from collections import OrderedDict
+from collections import OrderedDict, deque
 
 def sanitize_filename(filename):
   # Remove or replace invalid characters
@@ -39,17 +37,23 @@ class ChatUI:
     self.env_vars = OrderedDict()
     self.streaming_message = ""
     self.last_message_type = None  # To keep track of the last message type (user or AI)
-    print(interpreter.system_message)
 
-    self.chat_manager = ChatManager(self)
-    self.audio_manager = AudioManager()
+    # Initialize KnowledgeManager first
     self.knowledge_manager = KnowledgeManager(self)
+    self.interpreter_manager = InterpreterManager(self.knowledge_manager)
+    self.chat_manager = ChatManager(self.interpreter_manager, self)
+    self.audio_manager = AudioManager()
+
     self.context_manager = ContextManager(self)
 
     self.input_box = ctk.CTkTextbox(root, height=50, fg_color=get_color("BG_INPUT"), text_color=get_color("TEXT_PRIMARY"))
     
     self.create_ui()
     self.streaming_label = None
+    self.stream_lines = deque(maxlen=10)
+    self.partial_line = ""  # Added buffer for partial lines
+    self.word_buffer = []  # Added buffer for words
+
 
   def create_ui(self):
     self.root.grid_rowconfigure(0, weight=1)
@@ -111,10 +115,11 @@ class ChatUI:
       toggle.pack(anchor="w", pady=2)
       self.kb_toggles[kb] = toggle
 
-    # Update the selected knowledge bases in the knowledge manager
-    selected_kbs = [kb for kb, toggle in self.kb_toggles.items() if toggle.get()]
-    self.knowledge_manager.update_selected_kbs(selected_kbs)
+    # Refresh the toggles based on the current selection
+    self.refresh_kb_toggles()
 
+    # Update the selected knowledge bases in the knowledge manager
+    self.knowledge_manager.update_selected_kbs(self.selected_kbs)
 
   def create_chat_window(self, parent):
     chat_frame = ctk.CTkFrame(parent, fg_color=get_color("BG_TERTIARY"))
@@ -169,8 +174,28 @@ class ChatUI:
     self.streaming_label.pack(pady=5, padx=10, anchor="w")
 
   def update_streaming_label(self, text):
+    self.partial_line += text  # Append new text to the buffer
+    
+    # Split the incoming text into words
+    words = self.partial_line.split()
+    
+    for word in words:
+      self.word_buffer.append(word)
+      if len(self.word_buffer) >= 10:  # Aggregate 10 words per line
+        line = ' '.join(self.word_buffer)
+        self.stream_lines.append(line)
+        self.word_buffer = []
+    
+    # Handle any remaining words
+    if self.word_buffer:
+      line = ' '.join(self.word_buffer)
+      self.stream_lines.append(line)
+      self.word_buffer = []
+    
+    displayed_text = '\n'.join(self.stream_lines)
+
     if self.streaming_label:
-      self.streaming_label.configure(text=text)
+      self.streaming_label.configure(text=displayed_text)
       self.chat_canvas.update_idletasks()
       self.chat_canvas.yview_moveto(1.0)
 
@@ -230,12 +255,20 @@ class ChatUI:
 
   def toggle_kb(self, kb):
     is_active = self.kb_toggles[kb].get()
-    if is_active:
+    if is_active and kb not in self.selected_kbs:
       self.selected_kbs.append(kb)
-    else:
+    elif not is_active and kb in self.selected_kbs:
       self.selected_kbs.remove(kb)
       self.context_manager.clear_custom_instructions()  # Clear custom instructions when KB is turned off
+    
     self.knowledge_manager.update_selected_kbs(self.selected_kbs)
+    self.refresh_kb_toggles()
+
+  def refresh_kb_toggles(self):
+    for kb, toggle in self.kb_toggles.items():
+      toggle.select() if kb in self.selected_kbs else toggle.deselect()
+    # After toggling, refresh the system message with updated skills
+    self.chat_manager.update_selected_kbs(self.selected_kbs)
 
   def send_message(self, user_input=None):
     if not self.is_voice_mode:
@@ -248,7 +281,7 @@ class ChatUI:
       timestamp = datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
       sanitized_query = sanitize_filename(user_input[:50])  # Limit to first 50 characters
       filename = f"Context_{sanitized_query}_{timestamp}.json"
-      
+          
       # Set the custom filename for the interpreter
       interpreter.conversation_filename = filename
       
@@ -264,14 +297,12 @@ class ChatUI:
       self.create_chat_bubble(kb_info, is_user=False)
     
     self.create_streaming_label()
-    full_response = ""
     for message in response_generator:
       if isinstance(message, dict) and 'content' in message:
         content = message['content']
         if content is not None:
           content = str(content)
-          full_response += content
-          self.update_streaming_label(f"{full_response}")
+          self.update_streaming_label(content)
 
     # Remove the streaming label
     if self.streaming_label:

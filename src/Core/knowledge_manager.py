@@ -16,12 +16,69 @@ class KnowledgeManager:
     def __init__(self, root):
         self.root = root
         self.selected_kbs = []
+        self.skills = {}  # {knowledge_base: [(skill_name, skill_path), ...]}
+        self.instructions = {}
 
     def get_knowledge_bases(self):
         return [d for d in os.listdir(KB_PATH) if os.path.isdir(os.path.join(KB_PATH, d))]
 
     def update_selected_kbs(self, selected_kbs):
+        # Remove skills and instructions from previously selected KBs
+        previous_kbs = set(self.selected_kbs) - set(selected_kbs)
+        for kb in previous_kbs:
+            self.remove_skills(kb)
+            self.remove_instructions(kb)
+        
+        # Add skills and instructions from newly selected KBs
+        new_kbs = set(selected_kbs) - set(self.selected_kbs)
+        for kb in new_kbs:
+            self.load_skills_and_instructions(kb)
+        
         self.selected_kbs = selected_kbs
+
+    def remove_skills(self, knowledge_base):
+        if knowledge_base in self.skills:
+            del self.skills[knowledge_base]
+            logging.info(f"Removed skills for {knowledge_base}")
+        
+        # Print available skills after removal
+        print(f"Available Skills after removal: {self.get_available_skills()}")
+
+    def remove_instructions(self, knowledge_base):
+        if knowledge_base in self.instructions:
+            del self.instructions[knowledge_base]
+            logging.info(f"Removed instructions for {knowledge_base}")
+            # Print instructions after removal
+            print(f"Instructions after removal for '{knowledge_base}': {self.instructions}")
+
+    def load_skills_and_instructions(self, knowledge_base):
+        kb_path = os.path.join(KB_PATH, knowledge_base)
+        skills_path = os.path.join(kb_path, "skills")
+        instructions_file = os.path.join(kb_path, "instructions.txt")  # Changed to .txt as per the latest file
+
+        # Load skills with their file paths
+        if os.path.exists(skills_path):
+            skill_files = [f for f in os.listdir(skills_path) if f.endswith('.txt')]
+            self.skills[knowledge_base] = [(f, os.path.join(skills_path, f)) for f in skill_files]
+        else:
+            self.skills[knowledge_base] = []
+
+        # Load instructions
+        if os.path.exists(instructions_file):
+            with open(instructions_file, 'r') as f:
+                self.instructions[knowledge_base] = f.read()
+        else:
+            self.instructions[knowledge_base] = ""
+
+        # Print available skills after addition
+        print(f"Available Skills after addition: {self.get_available_skills()}")
+
+    def get_available_skills(self):
+        # Collect skills and their paths from all selected knowledge bases
+        skills = []
+        for kb in self.selected_kbs:
+            skills.extend(self.skills.get(kb, []))
+        return skills
 
     def load_docs_folder(self, knowledge_base):
         kb_path = os.path.join(KB_PATH, knowledge_base)

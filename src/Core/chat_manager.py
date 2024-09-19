@@ -4,9 +4,14 @@ from Core.command_manager import CommandExecutor
 from Core.context_manager import ContextManager
 from Settings.config import *
 
+
 class ChatManager:
-  def __init__(self, chat_ui):
-    self.chat_ui = chat_ui
+  def __init__(self, interpreter_manager, chat_ui):  # Added chat_ui parameter
+    self.interpreter_manager = interpreter_manager
+    self.knowledge_manager = chat_ui.knowledge_manager  # Access KnowledgeManager instance
+    # If InterpreterManager needs KnowledgeManager, set it here
+    self.interpreter_manager.knowledge_manager = self.knowledge_manager
+    self.chat_ui = chat_ui  # Now defined
     self.selected_kbs = chat_ui.selected_kbs
     self.wake_word = chat_ui.wake_word
     self.interpreter_settings = chat_ui.interpreter_settings
@@ -18,6 +23,7 @@ class ChatManager:
 
   def update_selected_kbs(self, selected_kbs):
     self.selected_kbs = selected_kbs
+    self.interpreter_manager.update_system_message(selected_kbs)
 
   def update_wake_word(self, wake_word):
     self.wake_word = wake_word
@@ -47,22 +53,34 @@ class ChatManager:
       return response_generator, sources
 
   def get_interpreter_response(self, context, query):
-    if context is None:
-      prompt = f"""
+    available_skills = self.knowledge_manager.get_available_skills()
+    if available_skills:
+      # Extract skill names and paths from the tuples
+      skill_info = [f"{name} (Path: {path})\n" for name, path in available_skills]
+      #available_skills_str = ", ".join(skill_info)
+      base_prompt = f"""
+Available skills: {skill_info}
 
-      Look at the available skills and use relevant ones to complete the query: {AVAILABLE_SKILLS}
-      If no skills are relevant, respond to the query directly.
+Instructions:
+1. Analyze the query carefully.
+2. If any available skills are relevant, read the contents of the skill file at the provided path to see if it can help you.
+3. If no skills are relevant or if the query is simple, respond naturally without mentioning or using skills.
+4. Always prioritize giving a helpful and appropriate response over using skills unnecessarily.
 
-      Query: {query}
-      """
+Query: {query}
+"""
     else:
-      prompt = f"""
-      Context: {context}
-
-      Look at the available skills and use relevant ones to complete the query: {AVAILABLE_SKILLS}
-      If no skills are relevant, respond to the query directly.
-
-      Query: {query}
-      """
+        base_prompt = f"""
+        {query}
+        """
+    if context is not None:
+        context_prompt = f"""
+        Consider the following context when formulating your response:
+        {context}
+        """
+        prompt = context_prompt + "\n" + base_prompt
+    else:
+        prompt = base_prompt
+    
     print(prompt)
     return interpreter.chat(prompt, display=False, stream=True)

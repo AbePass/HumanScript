@@ -64,7 +64,3 @@ class ContextManager:
 
     def clear_custom_instructions(self):
         interpreter.system_message = SYSTEM_MESSAGE
-
-    def update_settings(self):
-        # This method can be used to refresh any settings if needed
-        pass

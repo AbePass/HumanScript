@@ -4,8 +4,7 @@ from UI.provider_window import ProviderSelectionUI
 from Core.interpreter_manager import InterpreterManager
 from Settings.color_settings import *
 import logging
-import sys
-
+from Core.knowledge_manager import KnowledgeManager
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -25,6 +24,7 @@ class MainApplication:
         self.provider_ui = None
         self.chat_ui = None
         self.interpreter_manager = None
+        self.knowledge_manager = None  # Added attribute
 
     def set_custom_theme(self):
         ctk.set_default_color_theme("dark-blue")  # Use a dark built-in theme as a base
@@ -62,7 +62,8 @@ class MainApplication:
         config = self.provider_ui.get_config()
 
         if provider and config:
-            self.interpreter_manager = InterpreterManager()
+            self.knowledge_manager = KnowledgeManager(self.root)
+            self.interpreter_manager = InterpreterManager(self.knowledge_manager)
             self.interpreter_manager.configure_provider(provider, config)
             self.show_chat_ui()
         else:
