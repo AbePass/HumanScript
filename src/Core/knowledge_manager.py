@@ -58,7 +58,7 @@ class KnowledgeManager:
 
         # Load skills with their file paths
         if os.path.exists(skills_path):
-            skill_files = [f for f in os.listdir(skills_path) if f.endswith('.txt')]
+            skill_files = [f for f in os.listdir(skills_path) if f.endswith('.md')]
             self.skills[knowledge_base] = [(f, os.path.join(skills_path, f)) for f in skill_files]
         else:
             self.skills[knowledge_base] = []
