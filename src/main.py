@@ -72,7 +72,7 @@ class MainApplication:
     def show_chat_ui(self):
         self.root.deiconify()  # Show the main window
         try:
-            self.chat_ui = ChatUI(self.root, self.interpreter_manager)
+            self.chat_ui = ChatUI(self.root)
             print("Chat UI created, starting mainloop")
             logging.debug("Chat UI created, starting mainloop")
             self.root.mainloop()

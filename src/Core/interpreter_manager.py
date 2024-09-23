@@ -6,10 +6,11 @@ from interpreter import interpreter
 from tkinter import messagebox  # Import messagebox from tkinter
 
 class InterpreterManager:
-  def __init__(self, knowledge_manager):
+  def __init__(self, knowledge_manager =None, chat_ui = None):
     self.knowledge_manager = knowledge_manager  # Initialize knowledge_manager
-    self.provider = None
-    self.config = None
+    self.chat_ui = chat_ui
+    self.configure_interpreter()
+    
     # Initialize any other necessary attributes here
   def configure_interpreter(self):
     interpreter.llm.supports_vision = INTERPRETER_SETTINGS["supports_vision"]
@@ -22,6 +23,7 @@ class InterpreterManager:
     interpreter.conversation_history_path = INTERPRETER_SETTINGS["conversation_history_path"]
     interpreter.computer.import_computer_api = INTERPRETER_SETTINGS["import_computer_api"]
     interpreter.computer.system_message = COMPUTER_SYSTEM_MESSAGE
+    print(interpreter.computer.system_message)
     interpreter.system_message = SYSTEM_MESSAGE
 
   def configure_provider(self, provider, config):
@@ -80,7 +82,7 @@ class InterpreterManager:
     - If you receive an error, retry from the last checkpoint.
     - Here are the skills you have access to:
     ''' + "\n    - " + skill_list
-    interpreter.system_message += "\n" + SYSTEM_MESSAGE_SKILLS
+    interpreter.system_message = SYSTEM_MESSAGE + "\n" + SYSTEM_MESSAGE_SKILLS
     # Update the interpreter's system message
     # Print the updated system message and available skills
     print(f"System Message Updated:\n{interpreter.system_message}")

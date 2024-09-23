@@ -1,7 +1,6 @@
 import customtkinter as ctk
 from tkinter import messagebox, simpledialog, filedialog
 from Settings.config import INTERPRETER_SETTINGS, CHROMA_PATH, KB_PATH
-from Core.knowledge_manager import KnowledgeManager
 import json
 import os
 import shutil

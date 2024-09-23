@@ -23,7 +23,7 @@ def sanitize_filename(filename):
   return sanitized or 'unnamed_conversation'  # Default name if empty
 
 class ChatUI:
-  def __init__(self, root, interpreter_manager):
+  def __init__(self, root):
     self.root = root
     self.root.title("HumanScript Chat")
 
