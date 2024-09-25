@@ -6,7 +6,6 @@ WAKE_WORD = "assistant"
 # Interpreter settings
 INTERPRETER_SETTINGS = {
     "supports_vision": True,
-    "supports_functions": True,
     "auto_run": True,
     "loop": False,
     "temperature": 0.2,

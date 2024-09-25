@@ -15,13 +15,6 @@ from Settings.color_settings import *
 import re
 from collections import OrderedDict, deque
 
-def sanitize_filename(filename):
-  # Remove or replace invalid characters
-  sanitized = re.sub(r'[\\/*?:"<>|\n\r\t]', '', filename)
-  sanitized = re.sub(r'\s+', '_', sanitized)  # Replace whitespace with underscore
-  sanitized = sanitized.strip('._')  # Remove leading/trailing dots and underscores
-  return sanitized or 'unnamed_conversation'  # Default name if empty
-
 class ChatUI:
   def __init__(self, root):
     self.root = root
@@ -270,6 +263,12 @@ class ChatUI:
     # After toggling, refresh the system message with updated skills
     self.chat_manager.update_selected_kbs(self.selected_kbs)
 
+  
+  def sanitize_filename(self, filename: str) -> str:
+    # Implement filename sanitization logic here
+    sanitized = ''.join(c for c in filename if c.isalnum() or c in (' ', '.', '_')).rstrip()
+    return sanitized
+
   def send_message(self, user_input=None):
     if not self.is_voice_mode:
       user_input = self.input_box.get("1.0", ctk.END).strip()
@@ -279,7 +278,7 @@ class ChatUI:
       self.input_box.delete("1.0", ctk.END)
       # Modify the filename generation for the interpreter
       timestamp = datetime.now().strftime("%Y_%m_%d_%H-%M-%S")
-      sanitized_query = sanitize_filename(user_input[:50])  # Limit to first 50 characters
+      sanitized_query = self.sanitize_filename(user_input[:50])  # Limit to first 50 characters
       filename = f"Context_{sanitized_query}_{timestamp}.json"
           
       # Set the custom filename for the interpreter
@@ -344,7 +343,6 @@ class ChatUI:
     self.interpreter_settings.update(new_settings)
     # Update interpreter directly
     interpreter.llm.supports_vision = new_settings["supports_vision"]
-    interpreter.llm.supports_functions = new_settings["supports_functions"]
     interpreter.auto_run = new_settings["auto_run"]
     interpreter.loop = new_settings["loop"]
     interpreter.llm.temperature = new_settings["temperature"]

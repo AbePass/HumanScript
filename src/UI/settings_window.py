@@ -64,9 +64,6 @@ class SettingsWindow:
     self.supports_vision_var = ctk.BooleanVar()
     ctk.CTkCheckBox(parent, text="Supports Vision", variable=self.supports_vision_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
 
-    self.supports_functions_var = ctk.BooleanVar()
-    ctk.CTkCheckBox(parent, text="Supports Functions", variable=self.supports_functions_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
-
     self.auto_run_var = ctk.BooleanVar()
     ctk.CTkCheckBox(parent, text="Auto Run", variable=self.auto_run_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
 
@@ -217,7 +214,6 @@ class SettingsWindow:
     self.wake_word_entry.insert(0, self.chat_ui.wake_word)
     
     self.supports_vision_var.set(self.chat_ui.interpreter_settings["supports_vision"])
-    self.supports_functions_var.set(self.chat_ui.interpreter_settings["supports_functions"])
     self.auto_run_var.set(self.chat_ui.interpreter_settings["auto_run"])
     self.loop_var.set(self.chat_ui.interpreter_settings["loop"])
     self.temperature_var.set(self.chat_ui.interpreter_settings["temperature"])
@@ -236,7 +232,6 @@ class SettingsWindow:
     # Update interpreter settings through ChatUI
     self.chat_ui.update_interpreter_settings({
       "supports_vision": self.supports_vision_var.get(),
-      "supports_functions": self.supports_functions_var.get(),
       "auto_run": self.auto_run_var.get(),
       "loop": self.loop_var.get(),
       "temperature": self.temperature_var.get(),

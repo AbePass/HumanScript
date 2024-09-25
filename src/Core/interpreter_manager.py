@@ -14,7 +14,6 @@ class InterpreterManager:
     # Initialize any other necessary attributes here
   def configure_interpreter(self):
     interpreter.llm.supports_vision = INTERPRETER_SETTINGS["supports_vision"]
-    interpreter.llm.supports_functions = INTERPRETER_SETTINGS["supports_functions"]
     interpreter.auto_run = INTERPRETER_SETTINGS["auto_run"]
     interpreter.loop = INTERPRETER_SETTINGS["loop"]
     interpreter.llm.temperature = INTERPRETER_SETTINGS["temperature"]
