@@ -3,13 +3,11 @@ __pycache__/
 .vscode/
 conversation_history/*
 src/Databases/*
-Knowledge/*
 src/Settings/provider_config.json
 Skillset/*
 
 !conversation_history/.gitkeep
 !src/Databases/.gitkeep
-!Knowledge/.gitkeep
 !User_Data/.gitkeep
 !Skillset/.gitkeep
 
