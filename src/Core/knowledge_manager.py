@@ -162,9 +162,12 @@ class KnowledgeManager:
                 self.load_docs_folder(knowledge_base)
             else:
                 print(f"Creating new knowledge base.")
-                os.makedirs(os.path.join(kb_path, "docs"))
+                os.makedirs(os.path.join(kb_path, "docs"), exist_ok=True)
+                os.makedirs(os.path.join(kb_path, "skills"), exist_ok=True)
                 with open(os.path.join(kb_path, "urls.txt"), 'w') as f:
                     pass  # Create an empty urls.txt file
+                with open(os.path.join(kb_path, "instructions.txt"), 'w') as f:
+                    pass  # Create an empty instructions.txt file
                 self.load_docs_folder(knowledge_base)
         else:
             # Update all knowledge bases
