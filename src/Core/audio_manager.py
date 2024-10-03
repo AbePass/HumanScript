@@ -13,10 +13,10 @@ class AudioManager:
         self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.wake_word = WAKE_WORD
         self.is_listening = False
-        pygame.mixer.init()
+        pygame.mixer.init(frequency=44100, size=-16, channels=2)
+        # Initialize the mixer once with consistent parameters
 
     def generate_beep(self):
-        pygame.mixer.init(frequency=44100, size=-16, channels=2)
         t = np.linspace(0, BEEP_DURATION, int(44100 * BEEP_DURATION), False)
         beep = np.sin(2 * np.pi * BEEP_FREQUENCY * t)
         beep = (beep * 32767).astype(np.int16)
@@ -69,27 +69,26 @@ class AudioManager:
                     logging.warning(f"Could not delete temporary file: {temp_audio_path}")
 
     def text_to_speech(self, text):
-        pygame.mixer.init()
         response = self.client.audio.speech.create(
             model=TTS_SETTINGS["model"],
             voice=TTS_SETTINGS["voice"],
             input=text
         )
-        
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as temp_audio:
             temp_audio.write(response.content)
             temp_audio_path = temp_audio.name
-        
+
         pygame.mixer.music.load(temp_audio_path)
         pygame.mixer.music.play()
         while pygame.mixer.music.get_busy():
             pygame.time.Clock().tick(10)
             if not self.is_listening:  # Add this line to check if playback should be stopped
                 break
-        
+
         pygame.mixer.music.unload()
         time.sleep(0.1)
-        
+
         try:
             os.unlink(temp_audio_path)
         except FileNotFoundError:
