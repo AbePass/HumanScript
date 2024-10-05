@@ -39,14 +39,6 @@ SYSTEM_MESSAGE_PERSONA = '''
 - You will be friendly and helpful. If the chat history indicates that the goal is not being accomplished, you will make suggestions you think might be helpful.
 '''
 
-SYSTEM_MESSAGE_DEVMODE = '''
-### Response Format Guidelines
-- All your responses will be in a human readable markdown format.
-- You are a world class programmer working with another programmer who would like to know how you are doing in detail. Your response will always be in the following format:
-        - Response - This should be just the response to the action item in the prompt, under the Heading "RESPONSE"
-        - Logic - Describe the path you took to acheive the prompt in detail. Any functions called should be noted and explained. If there is code execution involved it code snippets should be included. Any issues should be explained in detail, along with how they where overcome. If the prompt cannot be fulfilled, you will speculate on the reason for failure in detail. This will be under the heading "LOGIC"
-        '''
-
 SYSTEM_MESSAGE_REFERENCING_SEARCHING = '''
 ### Referencing and Searching:
 - If you need to refer to prior interactions, access the "conversation_history" folder.

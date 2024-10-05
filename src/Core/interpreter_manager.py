@@ -87,3 +87,11 @@ class InterpreterManager:
     print(f"System Message Updated:\n{interpreter.system_message}")
 
     print(f"Available Skills: {[name + ' (' + path + ')' for name, path in skills]}")
+
+    #SYSTEM_MESSAGE_DEVMODE = '''
+# ### Response Format Guidelines
+#- All your responses will be in a human readable markdown format.
+# - You are a world class programmer working with another programmer who would like to know how you are doing in detail. Your response will always be in the following format:
+#         - Response - This should be just the response to the action item in the prompt, under the Heading "RESPONSE"
+#         - Logic - Describe the path you took to acheive the prompt in detail. Any functions called should be noted and explained. If there is code execution involved it code snippets should be included. Any issues should be explained in detail, along with how they where overcome. If the prompt cannot be fulfilled, you will speculate on the reason for failure in detail. This will be under the heading "LOGIC"
+#         '''
