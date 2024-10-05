@@ -67,6 +67,9 @@ class SettingsWindow:
     self.auto_run_var = ctk.BooleanVar()
     ctk.CTkCheckBox(parent, text="Auto Run", variable=self.auto_run_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
 
+    self.dev_mode_var = ctk.BooleanVar()
+    ctk.CTkCheckBox(parent, text="Developer Mode", variable=self.dev_mode_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
+
     self.loop_var = ctk.BooleanVar()
     ctk.CTkCheckBox(parent, text="Loop", variable=self.loop_var, text_color=get_color("TEXT_PRIMARY")).pack(pady=2, anchor="w")
 
@@ -215,6 +218,7 @@ class SettingsWindow:
     
     self.supports_vision_var.set(self.chat_ui.interpreter_settings["supports_vision"])
     self.auto_run_var.set(self.chat_ui.interpreter_settings["auto_run"])
+    
     self.loop_var.set(self.chat_ui.interpreter_settings["loop"])
     self.temperature_var.set(self.chat_ui.interpreter_settings["temperature"])
     self.max_tokens_var.set(self.chat_ui.interpreter_settings["max_tokens"])
