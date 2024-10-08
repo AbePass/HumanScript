@@ -13,16 +13,17 @@ class AudioManager:
         self.client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.wake_word = WAKE_WORD
         self.is_listening = False
-        pygame.mixer.init(frequency=44100, size=-16, channels=2)
+        #pygame.mixer.init(frequency=44100, size=-16, channels=2)
         # Initialize the mixer once with consistent parameters
 
     def generate_beep(self):
-        t = np.linspace(0, BEEP_DURATION, int(44100 * BEEP_DURATION), False)
-        beep = np.sin(2 * np.pi * BEEP_FREQUENCY * t)
-        beep = (beep * 32767).astype(np.int16)
-        stereo_beep = np.column_stack((beep, beep))  # Create stereo audio
-        sound = pygame.sndarray.make_sound(stereo_beep)
-        sound.play()
+        print("Beep")
+        # t = np.linspace(0, BEEP_DURATION, int(44100 * BEEP_DURATION), False)
+        # beep = np.sin(2 * np.pi * BEEP_FREQUENCY * t)
+        # beep = (beep * 32767).astype(np.int16)
+        # stereo_beep = np.column_stack((beep, beep))  # Create stereo audio
+        # sound = pygame.sndarray.make_sound(stereo_beep)
+        # sound.play()
 
     def recognize_speech(self):
         if pygame.mixer.get_init():
